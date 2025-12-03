@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://markprint.io/schemas/standard-letter.schema.json",
+  "title": "Standard Letter Metadata",
+  "description": "Metadata schema for standard letter documents",
+  "type": "object",
+  "required": ["layout_template", "title", "document_id", "revision"],
+  "properties": {
+    "layout_template": {
+      "type": "string",
+      "description": "Template ID to use for rendering",
+      "const": "standard-letter"
+    },
+    "title": {
+      "type": "string",
+      "description": "Document title",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "document_id": {
+      "type": "string",
+      "description": "Unique document identifier",
+      "pattern": "^[A-Z]{3}-[0-9]{3}$",
+      "examples": ["SOP-100", "WKI-001"]
+    },
+    "revision": {
+      "type": "string",
+      "description": "Document revision",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "examples": ["1.0", "2.5"]
+    },
+    "effective_date": {
+      "type": "string",
+      "description": "Document effective date",
+      "format": "date",
+      "examples": ["2025-01-15"]
+    },
+    "status": {
+      "type": "string",
+      "description": "Document status",
+      "enum": ["DRAFT", "REVIEW", "APPROVED", "SUPERSEDED", "OBSOLETE"],
+      "default": "DRAFT"
+    },
+    "department": {
+      "type": "string",
+      "description": "Responsible department",
+      "maxLength": 100
+    },
+    "owner": {
+      "type": "string",
+      "description": "Document owner",
+      "maxLength": 100
+    },
+    "approver": {
+      "type": "string",
+      "description": "Document approver",
+      "maxLength": 100
+    },
+    "amos_version": {
+      "type": "string",
+      "description": "AMOS version compatibility",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "apn": {
+      "type": "string",
+      "description": "Aircraft part number"
+    },
+    "upstream_apn": {
+      "type": "string",
+      "description": "Upstream APN reference"
+    },
+    "downstream_apn": {
+      "type": "string",
+      "description": "Downstream APN reference"
+    }
+  },
+  "additionalProperties": true
+}

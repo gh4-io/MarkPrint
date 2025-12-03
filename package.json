@@ -65,6 +65,21 @@
         "command": "extension.markdown-pdf.all",
         "title": "Markdown PDF: Export (all: pdf, html, png, jpeg)",
         "group": "markdown-pdf"
+      },
+      {
+        "command": "markprint.changeBuildMode",
+        "title": "MarkPrint: Change Build Mode",
+        "group": "markprint"
+      },
+      {
+        "command": "markprint.selectTemplate",
+        "title": "MarkPrint: Select Template",
+        "group": "markprint"
+      },
+      {
+        "command": "markprint.reloadTemplates",
+        "title": "MarkPrint: Reload Templates",
+        "group": "markprint"
       }
     ],
     "menus": {
@@ -145,6 +160,17 @@
           "type": "boolean",
           "default": false,
           "description": "Enable Auto convert on save. To apply the settings, you need to restart Visual Studio Code"
+        },
+        "markprint.buildMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "manual",
+            "hybrid"
+          ],
+          "default": "manual",
+          "description": "Build mode: auto (full export on save), manual (export via commands only), hybrid (lightweight preview on save, full export via commands)",
+          "scope": "resource"
         },
         "markdown-pdf.convertOnSaveExclude": {
           "type": "array",
@@ -490,6 +516,8 @@
     "vscode-test": "^1.3.0"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
     "cheerio": "^0.20.0",
     "emoji-images": "^0.1.1",
     "gray-matter": "^4.0.2",

@@ -6,26 +6,114 @@ var url = require('url');
 var os = require('os');
 var INSTALL_CHECK = false;
 
+// MarkPrint Phase 1: Template Foundations
+const TemplateRegistry = require('./src/templateRegistry');
+const StatusBarManager = require('./src/statusBar');
+const SchemaValidator = require('./src/schemaValidator');
+
+// Global instances
+let templateRegistry;
+let statusBarManager;
+let schemaValidator;
+
 function activate(context) {
   init();
 
+  // Initialize Phase 1 components
+  templateRegistry = new TemplateRegistry(context);
+  statusBarManager = new StatusBarManager();
+  schemaValidator = new SchemaValidator();
+
+  // Initialize template registry
+  templateRegistry.initialize().catch(err => {
+    console.error('Failed to initialize template registry:', err);
+  });
+
+  // Initialize status bar
+  statusBarManager.initialize();
+  context.subscriptions.push(statusBarManager);
+
+  // Register Phase 1 commands
+  context.subscriptions.push(
+    vscode.commands.registerCommand('markprint.changeBuildMode', async function () {
+      await statusBarManager.showBuildModePicker();
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('markprint.selectTemplate', async function () {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) return;
+      await templateRegistry.promptTemplateSelection(editor.document, context.workspaceState);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('markprint.reloadTemplates', async function () {
+      await templateRegistry.reload();
+      vscode.window.showInformationMessage('Templates reloaded');
+    })
+  );
+
+  // Existing commands
   var commands = [
-    vscode.commands.registerCommand('extension.markdown-pdf.settings', async function () { await markdownPdf('settings'); }),
-    vscode.commands.registerCommand('extension.markdown-pdf.pdf', async function () { await markdownPdf('pdf'); }),
-    vscode.commands.registerCommand('extension.markdown-pdf.html', async function () { await markdownPdf('html'); }),
-    vscode.commands.registerCommand('extension.markdown-pdf.png', async function () { await markdownPdf('png'); }),
-    vscode.commands.registerCommand('extension.markdown-pdf.jpeg', async function () { await markdownPdf('jpeg'); }),
-    vscode.commands.registerCommand('extension.markdown-pdf.all', async function () { await markdownPdf('all'); })
+    vscode.commands.registerCommand('extension.markdown-pdf.settings', async function () { await markdownPdf('settings', context); }),
+    vscode.commands.registerCommand('extension.markdown-pdf.pdf', async function () { await markdownPdf('pdf', context); }),
+    vscode.commands.registerCommand('extension.markdown-pdf.html', async function () { await markdownPdf('html', context); }),
+    vscode.commands.registerCommand('extension.markdown-pdf.png', async function () { await markdownPdf('png', context); }),
+    vscode.commands.registerCommand('extension.markdown-pdf.jpeg', async function () { await markdownPdf('jpeg', context); }),
+    vscode.commands.registerCommand('extension.markdown-pdf.all', async function () { await markdownPdf('all', context); })
   ];
   commands.forEach(function (command) {
     context.subscriptions.push(command);
   });
 
+  // Handle build modes
+  var buildMode = vscode.workspace.getConfiguration('markprint')['buildMode'] || 'manual';
   var isConvertOnSave = vscode.workspace.getConfiguration('markdown-pdf')['convertOnSave'];
-  if (isConvertOnSave) {
-    var disposable_onsave = vscode.workspace.onDidSaveTextDocument(function () { markdownPdfOnSave(); });
+
+  // Legacy convertOnSave or auto mode
+  if (isConvertOnSave || buildMode === 'auto') {
+    var disposable_onsave = vscode.workspace.onDidSaveTextDocument(function (doc) {
+      markdownPdfOnSave(doc, context);
+    });
     context.subscriptions.push(disposable_onsave);
   }
+
+  // Hybrid mode: lightweight preview on save
+  if (buildMode === 'hybrid') {
+    var disposable_hybrid = vscode.workspace.onDidSaveTextDocument(async function (doc) {
+      if (doc.languageId === 'markdown') {
+        await validateAndPreview(doc, context);
+      }
+    });
+    context.subscriptions.push(disposable_hybrid);
+  }
+
+  // Update status bar on active editor change
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor(async function (editor) {
+      if (editor && editor.document.languageId === 'markdown') {
+        const template = await templateRegistry.getTemplateForDocument(editor.document, context.workspaceState);
+        if (template) {
+          statusBarManager.setTemplate(template);
+        }
+      } else {
+        statusBarManager.clearTemplate();
+      }
+    })
+  );
+
+  // Update status bar on config change
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration(e => {
+      if (e.affectsConfiguration('markprint.buildMode')) {
+        statusBarManager.updateBuildMode();
+      }
+    })
+  );
+
+  context.subscriptions.push(schemaValidator);
 }
 exports.activate = activate;
 
@@ -34,7 +122,33 @@ function deactivate() {
 }
 exports.deactivate = deactivate;
 
-async function markdownPdf(option_type) {
+// Phase 1: Validate and preview (hybrid mode)
+async function validateAndPreview(document, context) {
+  try {
+    // Get template for document
+    const template = await templateRegistry.getTemplateForDocument(document, context.workspaceState);
+    if (!template) {
+      return; // No template selected, skip validation
+    }
+
+    // Validate metadata
+    const isValid = await schemaValidator.validateDocument(document, template);
+    if (!isValid) {
+      // Validation errors reported to Problems panel, don't proceed
+      return;
+    }
+
+    // Clear any previous validation errors
+    schemaValidator.clearDiagnostics(document);
+
+    // Show lightweight HTML preview (future: could generate HTML preview)
+    vscode.window.setStatusBarMessage('$(check) Template validation passed', 3000);
+  } catch (error) {
+    console.error('Validation and preview failed:', error);
+  }
+}
+
+async function markdownPdf(option_type, context) {
 
   try {
 
@@ -62,6 +176,19 @@ async function markdownPdf(option_type) {
       }
       vscode.window.showWarningMessage('File name does not get!');
       return;
+    }
+
+    // Phase 1: Validate template if available
+    if (context && templateRegistry && schemaValidator) {
+      const template = await templateRegistry.getTemplateForDocument(editor.document, context.workspaceState);
+      if (template) {
+        const isValid = await schemaValidator.validateDocument(editor.document, template);
+        if (!isValid) {
+          vscode.window.showErrorMessage('Export blocked: template validation failed. Check Problems panel.');
+          return;
+        }
+        schemaValidator.clearDiagnostics(editor.document);
+      }
     }
 
     var types_format = ['html', 'pdf', 'png', 'jpeg'];
@@ -107,7 +234,7 @@ async function markdownPdf(option_type) {
   }
 }
 
-function markdownPdfOnSave() {
+function markdownPdfOnSave(doc, context) {
   try {
     var editor = vscode.window.activeTextEditor;
     var mode = editor.document.languageId;
@@ -115,7 +242,7 @@ function markdownPdfOnSave() {
       return;
     }
     if (!isMarkdownPdfOnSaveExclude()) {
-      markdownPdf('settings');
+      markdownPdf('settings', context);
     }
   } catch (error) {
     showErrorMessage('markdownPdfOnSave()', error);

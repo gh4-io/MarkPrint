@@ -1,0 +1,94 @@
+{
+  "id": "standard-letter",
+  "label": "Standard Letter",
+  "version": "1.0.0",
+  "description": "Standard letter format based on DTS Master Report layout profile",
+  "extends": null,
+  "renderer": "chromium",
+  "schema": ".markprint/schemas/standard-letter.schema.json",
+  "resources": {
+    "css": [],
+    "fonts": [
+      {
+        "family": "Arial",
+        "style": "Regular",
+        "weight": 400
+      },
+      {
+        "family": "Trebuchet MS",
+        "style": "Regular",
+        "weight": 400
+      }
+    ],
+    "assets": []
+  },
+  "layout": {
+    "format": "Letter",
+    "orientation": "portrait",
+    "width": "8.5in",
+    "height": "11in",
+    "margins": {
+      "top": "0.5in",
+      "right": "0.5in",
+      "bottom": "1cm",
+      "left": "0.5in"
+    },
+    "frames": {
+      "title": {
+        "x": "2.0669in",
+        "y": "0.5in",
+        "width": "4.5997in",
+        "height": "0.8722in",
+        "font": "Trebuchet MS Regular",
+        "fontSize": 22
+      },
+      "body": {
+        "x": "0.5in",
+        "y": "2.1137in",
+        "width": "7.4721in",
+        "height": "7.8919in"
+      },
+      "metadata": {
+        "document_id": {
+          "x": "6.6843in",
+          "y": "0.5431in",
+          "width": "1.2747in",
+          "height": "0.2708in"
+        },
+        "revision": {
+          "x": "6.6843in",
+          "y": "0.8278in",
+          "width": "1.2747in",
+          "height": "0.2708in"
+        },
+        "effective_date": {
+          "x": "6.6843in",
+          "y": "1.0973in",
+          "width": "1.2747in",
+          "height": "0.2708in"
+        }
+      }
+    }
+  },
+  "outputs": {
+    "pdf": {
+      "enabled": true,
+      "mode": "ACTIVE_ONLY",
+      "filename_pattern": "{document_id}_r{revision}.pdf",
+      "target_directory": "published/pdf"
+    },
+    "html": {
+      "enabled": true,
+      "mode": "DISABLED",
+      "filename_pattern": "{document_id}_r{revision}.html",
+      "target_directory": "published/web"
+    },
+    "png": {
+      "enabled": false
+    },
+    "jpeg": {
+      "enabled": false
+    }
+  },
+  "buildMode": "manual"
+}
