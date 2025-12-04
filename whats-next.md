@@ -743,3 +743,12 @@ None currently in place. All changes are permanent architecture updates.
 - Post-install: Unknown, awaiting user verification
 - No tests have successfully run yet with new configuration
 </current_state>
+
+<context_update timestamp="2025-12-04T09:40-0500">
+## Automated Test Workspace Preparation
+- Added `.plan/tools/prepare-test-workspace.js` to copy `templates/standard-letter.json`, `.markprint/schemas/standard-letter.schema.json`, and `.plan/ref/SOP-200_Create_Workackage_Sequencing_Type.md` into `test/.test-workspace/.markprint/{templates,schemas}` plus the SOP markdown before each debug/test run.
+- Updated `package.json` with a `pretest` script (`node ./.plan/tools/prepare-test-workspace.js`) so `npm test` always seeds the sandbox automatically without touching real workspace data.
+- Registered a VS Code task (`.vscode/tasks.json`) named “Prepare Test Workspace” and set both “Run Extension” and “Extension Tests” launch configs to call it via `preLaunchTask`, also passing `${workspaceFolder}/test/.test-workspace` as the workspace folder argument so the Extension Development Host opens the isolated sandbox.
+- Added `test/.test-workspace/` to `.gitignore` to keep the generated workspace out of source control.
+- Result: Phase 1 template registry now finds workspace templates/SOP content in a safe throwaway folder, so automated tests and F5 sessions run against realistic data without requiring major architectural changes.
+</context_update>

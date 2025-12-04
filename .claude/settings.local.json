@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(taches-cc-resources:create-meta-prompts)",
+      "Bash([ -d ./.prompts ])",
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(node -e:*)",
+      "Bash(node -c:*)",
+      "Bash(npm test:*)",
+      "Bash(find:*)",
+      "Bash(npm ls:*)",
+      "Bash(python3:*)",
+      "Bash(ldd:*)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo apt-get install:*)",
+      "Bash(wslpath:*)",
+      "Bash({ head -536 extension.js.backup)",
+      "Bash(})",
+      "Bash({ head -536 extension.js)",
+      "Skill(taches-cc-resources:debug-like-expert)",
+      "Bash([ -f \"pyproject.toml\" ])",
+      "Bash([ -f \"package.json\" ])",
+      "Bash(/usr/bin/chromium-browser:*)",
+      "Bash(timeout 5 /usr/bin/chromium-browser:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "claudeCode.experimental.allowDangerouslySkipPermissions": true
+}

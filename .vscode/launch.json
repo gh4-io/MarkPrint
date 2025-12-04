@@ -7,9 +7,11 @@
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
+            "preLaunchTask": "Prepare Test Workspace",
             "args": [
                 "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}"
+                "--extensionDevelopmentPath=${workspaceFolder}",
+                "${workspaceFolder}/test/.test-workspace"
             ]
         },
         {
@@ -17,10 +19,12 @@
             "type": "extensionHost",
             "request": "launch",
             "runtimeExecutable": "${execPath}",
+            "preLaunchTask": "Prepare Test Workspace",
             "args": [
                 "--disable-extensions",
                 "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/test/suite/index"
+                "--extensionTestsPath=${workspaceFolder}/test/suite/index",
+                "${workspaceFolder}/test/.test-workspace"
             ]
         }
     ]

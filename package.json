@@ -506,6 +506,7 @@
     }
   },
   "scripts": {
+    "pretest": "node ./.plan/tools/prepare-test-workspace.js",
     "vscode:prepublish": "node ./src/compile",
     "test": "node ./test/runTest.js"
   },

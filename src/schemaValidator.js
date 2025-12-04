@@ -6,13 +6,32 @@ const vscode = require('vscode');
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 
+const ALWAYS_SCALAR_FIELDS = new Set([
+  'category',
+  'catagory', // retain misspelling just in case metadata uses it
+  'title',
+  'owner',
+  'approver',
+  'effective_date',
+  'status',
+  'amos_version',
+  'department',
+  'revision',
+  'pipeline_profile'
+]);
+
 /**
  * Schema Validator
  * Validates document front matter against template schemas
  */
 class SchemaValidator {
   constructor() {
-    this.ajv = new Ajv({ allErrors: true, verbose: true });
+    this.ajv = new Ajv({
+      allErrors: true,
+      verbose: true,
+      coerceTypes: true,
+      strict: false
+    });
     addFormats(this.ajv);
     this.diagnosticCollection = vscode.languages.createDiagnosticCollection('markprint');
   }
@@ -33,7 +52,7 @@ class SchemaValidator {
     }
 
     // Extract front matter
-    const frontMatter = this.extractFrontMatter(document);
+    let frontMatter = this.extractFrontMatter(document);
     if (!frontMatter) {
       this.addError(document, 0, 'No front matter found in document');
       return false;
@@ -46,8 +65,13 @@ class SchemaValidator {
       return false;
     }
 
+    const relaxedSchema = this.relaxSchema(schema);
+
+    // Normalize front matter before validation
+    frontMatter = this.normalizeFrontMatter(frontMatter, schema);
+
     // Validate
-    const validate = this.ajv.compile(schema);
+    const validate = this.ajv.compile(relaxedSchema);
     const valid = validate(frontMatter);
 
     if (!valid) {
@@ -56,6 +80,112 @@ class SchemaValidator {
     }
 
     return true;
+  }
+
+  /**
+   * Normalize front matter to match schema expectations
+   * Coerces types, handles nulls, provides defaults
+   */
+  normalizeFrontMatter(data, schema) {
+    if (!schema.properties) {
+      return data;
+    }
+
+    const normalized = { ...data };
+
+    for (const [key, propSchema] of Object.entries(schema.properties)) {
+      if (!(key in normalized)) {
+        continue;
+      }
+
+      const value = normalized[key];
+
+      if (value === null || value === undefined || value === '') {
+        normalized[key] = null;
+        continue;
+      }
+
+      if (Array.isArray(value)) {
+        if (ALWAYS_SCALAR_FIELDS.has(key)) {
+          normalized[key] = this.normalizeScalarValue(key, value.length ? value[0] : null, propSchema);
+        } else {
+          normalized[key] = value.map(entry => this.normalizeScalarValue(key, entry, propSchema));
+        }
+        continue;
+      }
+
+      normalized[key] = this.normalizeScalarValue(key, value, propSchema);
+    }
+
+    return normalized;
+  }
+
+  normalizeScalarValue(key, value, propSchema) {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    if (key === 'revision') {
+      return this.normalizeRevision(value);
+    }
+
+    if (propSchema.enum) {
+      return this.normalizeEnumValue(value, propSchema.enum);
+    }
+
+    if (propSchema.format === 'date') {
+      return this.normalizeDate(value);
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return value;
+    }
+
+    return this.toStringValue(value);
+  }
+
+  /**
+   * Normalize date to YYYY-MM-DD format
+   */
+  normalizeDate(value) {
+    if (!value) {
+      return null;
+    }
+
+    const str = this.toStringValue(value);
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return str;
+    }
+
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+
+    return str;
+  }
+
+  normalizeRevision(value) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    return this.toStringValue(value);
+  }
+
+  normalizeEnumValue(value, allowedValues) {
+    const str = this.toStringValue(value);
+    const match = allowedValues.find(option => option.toUpperCase() === str.toUpperCase());
+    return match || str;
+  }
+
+  toStringValue(value) {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    return String(value).trim();
   }
 
   /**
@@ -76,11 +206,20 @@ class SchemaValidator {
         if (workspaceFolders && workspaceFolders.length > 0) {
           fullPath = path.join(workspaceFolders[0].uri.fsPath, schemaPath);
         } else {
+          console.error('No workspace folder available for schema resolution');
           return null;
         }
       }
 
+      console.log('Schema resolution:', {
+        schemaPath,
+        workspaceFolder,
+        fullPath,
+        exists: fs.existsSync(fullPath)
+      });
+
       if (!fs.existsSync(fullPath)) {
+        console.error('Schema file not found:', fullPath);
         return null;
       }
 
@@ -230,6 +369,49 @@ class SchemaValidator {
    */
   clearAll() {
     this.diagnosticCollection.clear();
+  }
+
+  relaxSchema(schema) {
+    const relaxed = this.cloneSchema(schema);
+    delete relaxed.required;
+
+    if (relaxed.properties) {
+      for (const [key, propSchema] of Object.entries(relaxed.properties)) {
+        relaxed.properties[key] = this.buildFlexiblePropertySchema(key, propSchema);
+      }
+    }
+
+    return relaxed;
+  }
+
+  buildFlexiblePropertySchema(key, propSchema) {
+    const baseSchema = this.cloneSchema(propSchema);
+
+    if (key === 'revision') {
+      baseSchema.type = 'string';
+      delete baseSchema.pattern;
+    }
+
+    const variants = [baseSchema];
+
+    if (!ALWAYS_SCALAR_FIELDS.has(key)) {
+      variants.push({
+        type: 'array',
+        items: this.cloneSchema(baseSchema)
+      });
+    }
+
+    variants.push({ type: 'null' });
+
+    if (variants.length === 1) {
+      return baseSchema;
+    }
+
+    return { anyOf: variants };
+  }
+
+  cloneSchema(value) {
+    return value ? JSON.parse(JSON.stringify(value)) : value;
   }
 
   /**

@@ -1,5 +1,6 @@
 {
     "mark-print.outputDirectory": "sample",
     "mark-print.markdown-it-include.enable": false,
+    "mark-print.executablePath": "C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe",
     "debug.node.autoAttach": "on"
 }
