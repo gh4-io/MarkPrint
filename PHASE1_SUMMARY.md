@@ -257,7 +257,7 @@ title: My Document
 ## Notes
 
 - All code is modular and testable
-- Preserves existing mark-print functionality
+- Preserves existing markprint functionality
 - Backward compatible (legacy settings still work)
 - Self-contained in Node/JS (no external dependencies beyond npm packages)
 - Tests pass syntax validation (full test suite requires graphical VS Code)

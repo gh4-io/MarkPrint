@@ -58,12 +58,12 @@ function activate(context) {
 
   // Existing commands
   var commands = [
-    vscode.commands.registerCommand('extension.mark-print.settings', async function () { await markdownPdf('settings', context); }),
-    vscode.commands.registerCommand('extension.mark-print.pdf', async function () { await markdownPdf('pdf', context); }),
-    vscode.commands.registerCommand('extension.mark-print.html', async function () { await markdownPdf('html', context); }),
-    vscode.commands.registerCommand('extension.mark-print.png', async function () { await markdownPdf('png', context); }),
-    vscode.commands.registerCommand('extension.mark-print.jpeg', async function () { await markdownPdf('jpeg', context); }),
-    vscode.commands.registerCommand('extension.mark-print.all', async function () { await markdownPdf('all', context); })
+    vscode.commands.registerCommand('extension.markprint.settings', async function () { await markprint('settings', context); }),
+    vscode.commands.registerCommand('extension.markprint.pdf', async function () { await markprint('pdf', context); }),
+    vscode.commands.registerCommand('extension.markprint.html', async function () { await markprint('html', context); }),
+    vscode.commands.registerCommand('extension.markprint.png', async function () { await markprint('png', context); }),
+    vscode.commands.registerCommand('extension.markprint.jpeg', async function () { await markprint('jpeg', context); }),
+    vscode.commands.registerCommand('extension.markprint.all', async function () { await markprint('all', context); })
   ];
   commands.forEach(function (command) {
     context.subscriptions.push(command);
@@ -71,7 +71,7 @@ function activate(context) {
 
   // Handle build modes
   var buildMode = vscode.workspace.getConfiguration('markprint')['buildMode'] || 'manual';
-  var isConvertOnSave = vscode.workspace.getConfiguration('mark-print')['convertOnSave'];
+  var isConvertOnSave = vscode.workspace.getConfiguration('markprint')['convertOnSave'];
 
   // Legacy convertOnSave or auto mode
   if (isConvertOnSave || buildMode === 'auto') {
@@ -149,7 +149,7 @@ async function validateAndPreview(document, context) {
   }
 }
 
-async function markdownPdf(option_type, context) {
+async function markprint(option_type, context) {
 
   try {
 
@@ -198,16 +198,16 @@ async function markdownPdf(option_type, context) {
     if (types_format.indexOf(option_type) >= 0) {
       types[0] = option_type;
     } else if (option_type === 'settings') {
-      var types_tmp = vscode.workspace.getConfiguration('mark-print')['type'] || 'pdf';
+      var types_tmp = vscode.workspace.getConfiguration('markprint')['type'] || 'pdf';
       if (types_tmp && !Array.isArray(types_tmp)) {
           types[0] = types_tmp;
       } else {
-        types = vscode.workspace.getConfiguration('mark-print')['type'] || 'pdf';
+        types = vscode.workspace.getConfiguration('markprint')['type'] || 'pdf';
       }
     } else if (option_type === 'all') {
       types = types_format;
     } else {
-      showErrorMessage('markdownPdf().1 Supported formats: html, pdf, png, jpeg.');
+      showErrorMessage('markprint().1 Supported formats: html, pdf, png, jpeg.');
       return;
     }
 
@@ -222,16 +222,16 @@ async function markdownPdf(option_type, context) {
           var html = makeHtml(content, uri);
           await exportPdf(html, filename, type, uri);
         } else {
-          showErrorMessage('markdownPdf().2 Supported formats: html, pdf, png, jpeg.');
+          showErrorMessage('markprint().2 Supported formats: html, pdf, png, jpeg.');
           return;
         }
       }
     } else {
-      showErrorMessage('markdownPdf().3 Supported formats: html, pdf, png, jpeg.');
+      showErrorMessage('markprint().3 Supported formats: html, pdf, png, jpeg.');
       return;
     }
   } catch (error) {
-    showErrorMessage('markdownPdf()', error);
+    showErrorMessage('markprint()', error);
   }
 }
 
@@ -254,7 +254,7 @@ function isMarkdownPdfOnSaveExclude() {
   try{
     var editor = vscode.window.activeTextEditor;
     var filename = path.basename(editor.document.fileName);
-    var patterns = vscode.workspace.getConfiguration('mark-print')['convertOnSaveExclude'] || '';
+    var patterns = vscode.workspace.getConfiguration('markprint')['convertOnSaveExclude'] || '';
     var pattern;
     var i;
     if (patterns && Array.isArray(patterns) && patterns.length > 0) {
@@ -283,7 +283,7 @@ function convertMarkdownToHtml(filename, type, text) {
     try {
       var statusbarmessage = vscode.window.setStatusBarMessage('$(markdown) Converting (convertMarkdownToHtml) ...');
       var hljs = require('highlight.js');
-      var breaks = setBooleanValue(matterParts.data.breaks, vscode.workspace.getConfiguration('mark-print')['breaks']);
+      var breaks = setBooleanValue(matterParts.data.breaks, vscode.workspace.getConfiguration('markprint')['breaks']);
       var md = require('markdown-it')({
         html: true,
         breaks: breaks,
@@ -348,7 +348,7 @@ function convertMarkdownToHtml(filename, type, text) {
   md.use(require('markdown-it-checkbox'));
 
   // emoji
-  var emoji_f = setBooleanValue(matterParts.data.emoji, vscode.workspace.getConfiguration('mark-print')['emoji']);
+  var emoji_f = setBooleanValue(matterParts.data.emoji, vscode.workspace.getConfiguration('markprint')['emoji']);
   if (emoji_f) {
     var emojies_defs = require(path.join(__dirname, 'data', 'emoji.json'));
     try {
@@ -397,9 +397,9 @@ function convertMarkdownToHtml(filename, type, text) {
   // PlantUML
   // https://github.com/gmunguia/markdown-it-plantuml
   var plantumlOptions = {
-    openMarker: matterParts.data.plantumlOpenMarker || vscode.workspace.getConfiguration('mark-print')['plantumlOpenMarker'] || '@startuml',
-    closeMarker: matterParts.data.plantumlCloseMarker || vscode.workspace.getConfiguration('mark-print')['plantumlCloseMarker'] || '@enduml',
-    server: vscode.workspace.getConfiguration('mark-print')['plantumlServer'] || ''
+    openMarker: matterParts.data.plantumlOpenMarker || vscode.workspace.getConfiguration('markprint')['plantumlOpenMarker'] || '@startuml',
+    closeMarker: matterParts.data.plantumlCloseMarker || vscode.workspace.getConfiguration('markprint')['plantumlCloseMarker'] || '@enduml',
+    server: vscode.workspace.getConfiguration('markprint')['plantumlServer'] || ''
   }
   md.use(require('markdown-it-plantuml'), plantumlOptions);
 
@@ -407,7 +407,7 @@ function convertMarkdownToHtml(filename, type, text) {
   // https://github.com/camelaissani/markdown-it-include
   // the syntax is :[alt-text](relative-path-to-file.md)
   // https://talk.commonmark.org/t/transclusion-or-including-sub-documents-for-reuse/270/13
-  if (vscode.workspace.getConfiguration('mark-print')['markdown-it-include']['enable']) {
+  if (vscode.workspace.getConfiguration('markprint')['markdown-it-include']['enable']) {
     md.use(require("markdown-it-include"), {
       root: path.dirname(filename),
       includeRe: /:\[.+\]\((.+\..+)\)/i
@@ -459,7 +459,7 @@ function makeHtml(data, uri) {
     var template = readFile(filename);
 
     // read mermaid javascripts
-    var mermaidServer = vscode.workspace.getConfiguration('mark-print')['mermaidServer'] || '';
+    var mermaidServer = vscode.workspace.getConfiguration('markprint')['mermaidServer'] || '';
     var mermaid = '<script src=\"' + mermaidServer + '\"></script>';
 
     // compile template
@@ -503,7 +503,7 @@ function exportPdf(data, filename, type, uri) {
     return;
   }
 
-  var StatusbarMessageTimeout = vscode.workspace.getConfiguration('mark-print')['StatusbarMessageTimeout'];
+  var StatusbarMessageTimeout = vscode.workspace.getConfiguration('markprint')['StatusbarMessageTimeout'];
   vscode.window.setStatusBarMessage('');
   var exportFilename = getOutputDir(filename, uri);
 
@@ -511,6 +511,8 @@ function exportPdf(data, filename, type, uri) {
     location: vscode.ProgressLocation.Notification,
     title: '[]: Exporting (' + type + ') ...'
     }, async () => {
+      let tmpfilename = null;
+      const debug = vscode.workspace.getConfiguration('markprint')['debug'] || false;
       try {
         // export html
         if (type == 'html') {
@@ -522,10 +524,10 @@ function exportPdf(data, filename, type, uri) {
         const puppeteer = require('puppeteer-core');
         // create temporary file
         var f = path.parse(filename);
-        var tmpfilename = path.join(f.dir, f.name + '_tmp.html');
+        tmpfilename = path.join(f.dir, f.name + '_tmp.html');
         exportHtml(data, tmpfilename);
         var options = {
-          executablePath: vscode.workspace.getConfiguration('mark-print')['executablePath'] || puppeteer.executablePath(),
+          executablePath: vscode.workspace.getConfiguration('markprint')['executablePath'] || puppeteer.executablePath(),
           args: ['--lang='+vscode.env.language, '--no-sandbox', '--disable-setuid-sandbox']
           // Setting Up Chrome Linux Sandbox
           // https://github.com/puppeteer/puppeteer/blob/master/docs/troubleshooting.md#setting-up-chrome-linux-sandbox
@@ -539,35 +541,35 @@ function exportPdf(data, filename, type, uri) {
         if (type == 'pdf') {
           // If width or height option is set, it overrides the format option.
           // In order to set the default value of page size to A4, we changed it from the specification of puppeteer.
-          var width_option = vscode.workspace.getConfiguration('mark-print', uri)['width'] || '';
-          var height_option = vscode.workspace.getConfiguration('mark-print', uri)['height'] || '';
+          var width_option = vscode.workspace.getConfiguration('markprint', uri)['width'] || '';
+          var height_option = vscode.workspace.getConfiguration('markprint', uri)['height'] || '';
           var format_option = '';
           if (!width_option && !height_option) {
-            format_option = vscode.workspace.getConfiguration('mark-print', uri)['format'] || 'A4';
+            format_option = vscode.workspace.getConfiguration('markprint', uri)['format'] || 'A4';
           }
           var landscape_option;
-          if (vscode.workspace.getConfiguration('mark-print', uri)['orientation'] == 'landscape') {
+          if (vscode.workspace.getConfiguration('markprint', uri)['orientation'] == 'landscape') {
             landscape_option = true;
           } else {
             landscape_option = false;
           }
           var options = {
             path: exportFilename,
-            scale: vscode.workspace.getConfiguration('mark-print', uri)['scale'],
-            displayHeaderFooter: vscode.workspace.getConfiguration('mark-print', uri)['displayHeaderFooter'],
-            headerTemplate: transformTemplate(vscode.workspace.getConfiguration('mark-print', uri)['headerTemplate'] || ''),
-            footerTemplate: transformTemplate(vscode.workspace.getConfiguration('mark-print', uri)['footerTemplate'] || ''),
-            printBackground: vscode.workspace.getConfiguration('mark-print', uri)['printBackground'],
+            scale: vscode.workspace.getConfiguration('markprint', uri)['scale'],
+            displayHeaderFooter: vscode.workspace.getConfiguration('markprint', uri)['displayHeaderFooter'],
+            headerTemplate: transformTemplate(vscode.workspace.getConfiguration('markprint', uri)['headerTemplate'] || ''),
+            footerTemplate: transformTemplate(vscode.workspace.getConfiguration('markprint', uri)['footerTemplate'] || ''),
+            printBackground: vscode.workspace.getConfiguration('markprint', uri)['printBackground'],
             landscape: landscape_option,
-            pageRanges: vscode.workspace.getConfiguration('mark-print', uri)['pageRanges'] || '',
+            pageRanges: vscode.workspace.getConfiguration('markprint', uri)['pageRanges'] || '',
             format: format_option,
-            width: vscode.workspace.getConfiguration('mark-print', uri)['width'] || '',
-            height: vscode.workspace.getConfiguration('mark-print', uri)['height'] || '',
+            width: vscode.workspace.getConfiguration('markprint', uri)['width'] || '',
+            height: vscode.workspace.getConfiguration('markprint', uri)['height'] || '',
             margin: {
-              top: vscode.workspace.getConfiguration('mark-print', uri)['margin']['top'] || '',
-              right: vscode.workspace.getConfiguration('mark-print', uri)['margin']['right'] || '',
-              bottom: vscode.workspace.getConfiguration('mark-print', uri)['margin']['bottom'] || '',
-              left: vscode.workspace.getConfiguration('mark-print', uri)['margin']['left'] || ''
+              top: vscode.workspace.getConfiguration('markprint', uri)['margin']['top'] || '',
+              right: vscode.workspace.getConfiguration('markprint', uri)['margin']['right'] || '',
+              bottom: vscode.workspace.getConfiguration('markprint', uri)['margin']['bottom'] || '',
+              left: vscode.workspace.getConfiguration('markprint', uri)['margin']['left'] || ''
             },
             timeout: 0
           };
@@ -583,14 +585,14 @@ function exportPdf(data, filename, type, uri) {
             quality_option = undefined;
           }
           if (type == 'jpeg') {
-            quality_option = vscode.workspace.getConfiguration('mark-print')['quality'] || 100;
+            quality_option = vscode.workspace.getConfiguration('markprint')['quality'] || 100;
           }
 
           // screenshot size
-          var clip_x_option = vscode.workspace.getConfiguration('mark-print')['clip']['x'] || null;
-          var clip_y_option = vscode.workspace.getConfiguration('mark-print')['clip']['y'] || null;
-          var clip_width_option = vscode.workspace.getConfiguration('mark-print')['clip']['width'] || null;
-          var clip_height_option = vscode.workspace.getConfiguration('mark-print')['clip']['height'] || null;
+          var clip_x_option = vscode.workspace.getConfiguration('markprint')['clip']['x'] || null;
+          var clip_y_option = vscode.workspace.getConfiguration('markprint')['clip']['y'] || null;
+          var clip_width_option = vscode.workspace.getConfiguration('markprint')['clip']['width'] || null;
+          var clip_height_option = vscode.workspace.getConfiguration('markprint')['clip']['height'] || null;
           var options;
           if (clip_x_option !== null && clip_y_option !== null && clip_width_option !== null && clip_height_option !== null) {
             options = {
@@ -603,32 +605,27 @@ function exportPdf(data, filename, type, uri) {
                 width: clip_width_option,
                 height: clip_height_option,
               },
-              omitBackground: vscode.workspace.getConfiguration('mark-print')['omitBackground'],
+              omitBackground: vscode.workspace.getConfiguration('markprint')['omitBackground'],
             }
           } else {
             options = {
               path: exportFilename,
               quality: quality_option,
               fullPage: true,
-              omitBackground: vscode.workspace.getConfiguration('mark-print')['omitBackground'],
+              omitBackground: vscode.workspace.getConfiguration('markprint')['omitBackground'],
             }
           }
           await page.screenshot(options);
         }
 
         await browser.close();
-
-        // delete temporary file
-        var debug = vscode.workspace.getConfiguration('mark-print')['debug'] || false;
-        if (!debug) {
-          if (isExistsPath(tmpfilename)) {
-            deleteFile(tmpfilename);
-          }
-        }
-
         vscode.window.setStatusBarMessage('$(markdown) ' + exportFilename, StatusbarMessageTimeout);
       } catch (error) {
         showErrorMessage('exportPdf()', error);
+      } finally {
+        if (!debug && tmpfilename && isExistsPath(tmpfilename)) {
+          deleteFile(tmpfilename);
+        }
       }
     } // async
   ); // vscode.window.withProgress
@@ -696,7 +693,7 @@ function getOutputDir(filename, resource) {
     if (resource === undefined) {
       return filename;
     }
-    var outputDirectory = vscode.workspace.getConfiguration('mark-print')['outputDirectory'] || '';
+    var outputDirectory = vscode.workspace.getConfiguration('markprint')['outputDirectory'] || '';
     if (outputDirectory.length === 0) {
       return filename;
     }
@@ -711,15 +708,15 @@ function getOutputDir(filename, resource) {
     // Use path if it is absolute
     if (path.isAbsolute(outputDirectory)) {
       if (!isExistsDir(outputDirectory)) {
-        showErrorMessage(`The output directory specified by the mark-print.outputDirectory option does not exist.\
-          Check the mark-print.outputDirectory option. ` + outputDirectory);
+        showErrorMessage(`The output directory specified by the markprint.outputDirectory option does not exist.\
+          Check the markprint.outputDirectory option. ` + outputDirectory);
         return;
       }
       return path.join(outputDirectory, path.basename(filename));
     }
 
-    // Use a workspace relative path if there is a workspace and mark-print.outputDirectoryRootPath = workspace
-    var outputDirectoryRelativePathFile = vscode.workspace.getConfiguration('mark-print')['outputDirectoryRelativePathFile'];
+    // Use a workspace relative path if there is a workspace and markprint.outputDirectoryRootPath = workspace
+    var outputDirectoryRelativePathFile = vscode.workspace.getConfiguration('markprint')['outputDirectoryRelativePathFile'];
     let root = vscode.workspace.getWorkspaceFolder(resource);
     if (outputDirectoryRelativePathFile === false && root) {
       outputDir = path.join(root.uri.fsPath, outputDirectory);
@@ -816,7 +813,7 @@ function readStyles(uri) {
     var i;
     var appliedStyles = [];
 
-    const includeDefaultInfo = debugLogger.describeSetting('mark-print', 'includeDefaultStyles');
+    const includeDefaultInfo = debugLogger.describeSetting('markprint', 'includeDefaultStyles');
     const includeDefaultStyles = includeDefaultInfo.value;
 
     // 1. read the style of the vscode.
@@ -828,7 +825,8 @@ function readStyles(uri) {
 
     // 2. read the style of the markdown.styles setting.
     if (includeDefaultStyles) {
-      styles = vscode.workspace.getConfiguration('markdown')['styles'];
+      const markdownConfig = vscode.workspace.getConfiguration('markdown', uri || null);
+      styles = markdownConfig ? markdownConfig['styles'] : '';
       if (styles && Array.isArray(styles) && styles.length > 0) {
         for (i = 0; i < styles.length; i++) {
           var href = fixHref(uri, styles[i]);
@@ -839,8 +837,8 @@ function readStyles(uri) {
     }
 
     // 3. read the style of the highlight.js.
-    var highlightSettingInfo = debugLogger.describeSetting('mark-print', 'highlight');
-    var highlightStyleSettingInfo = debugLogger.describeSetting('mark-print', 'highlightStyle');
+    var highlightSettingInfo = debugLogger.describeSetting('markprint', 'highlight');
+    var highlightStyleSettingInfo = debugLogger.describeSetting('markprint', 'highlightStyle');
     var highlightStyle = highlightStyleSettingInfo.value || '';
     var ishighlight = highlightSettingInfo.value;
     if (ishighlight) {
@@ -856,15 +854,15 @@ function readStyles(uri) {
       }
     }
 
-    // 4. read the style of the mark-print.
+    // 4. read the style of the markprint.
     if (includeDefaultStyles) {
-      filename = path.join(__dirname, 'styles', 'mark-print.css');
+      filename = path.join(__dirname, 'styles', 'markprint.css');
       style += makeCss(filename);
       appliedStyles.push({ type: 'markprint.default', path: filename, source: includeDefaultInfo.source });
     }
 
-    // 5. read the style of the mark-print.styles settings.
-    styles = vscode.workspace.getConfiguration('mark-print')['styles'] || '';
+    // 5. read the style of the markprint.styles settings.
+    styles = vscode.workspace.getConfiguration('markprint')['styles'] || '';
     if (styles && Array.isArray(styles) && styles.length > 0) {
       for (i = 0; i < styles.length; i++) {
         var href = fixHref(uri, styles[i]);
@@ -879,7 +877,7 @@ function readStyles(uri) {
       markdownStyles: debugLogger.describeSetting('markdown', 'styles'),
       highlight: highlightSettingInfo,
       highlightStyle: highlightStyleSettingInfo,
-      markprintStyles: debugLogger.describeSetting('mark-print', 'styles'),
+      markprintStyles: debugLogger.describeSetting('markprint', 'styles'),
       appliedStyles
     });
 
@@ -918,8 +916,8 @@ function fixHref(resource, href) {
       return vscode.Uri.file(href).toString();
     }
 
-    // Use a workspace relative path if there is a workspace and mark-print.stylesRelativePathFile is false
-    var stylesRelativePathFile = vscode.workspace.getConfiguration('mark-print')['stylesRelativePathFile'];
+    // Use a workspace relative path if there is a workspace and markprint.stylesRelativePathFile is false
+    var stylesRelativePathFile = vscode.workspace.getConfiguration('markprint')['stylesRelativePathFile'];
     let root = vscode.workspace.getWorkspaceFolder(resource);
     if (stylesRelativePathFile === false && root) {
       return vscode.Uri.file(path.join(root.uri.fsPath, href)).toString();
@@ -935,7 +933,7 @@ function fixHref(resource, href) {
 function checkPuppeteerBinary() {
   try {
     // settings.json
-    var executablePath = vscode.workspace.getConfiguration('mark-print')['executablePath'] || ''
+    var executablePath = vscode.workspace.getConfiguration('markprint')['executablePath'] || ''
     if (isExistsPath(executablePath)) {
       INSTALL_CHECK = true;
       return true;
@@ -966,7 +964,7 @@ function installChromium() {
     // proxy setting
     setProxy();
 
-    var StatusbarMessageTimeout = vscode.workspace.getConfiguration('mark-print')['StatusbarMessageTimeout'];
+    var StatusbarMessageTimeout = vscode.workspace.getConfiguration('markprint')['StatusbarMessageTimeout'];
     const puppeteer = require('puppeteer-core');
     const browserFetcher = puppeteer.createBrowserFetcher();
     const revision = require(path.join(__dirname, 'node_modules', 'puppeteer-core', 'package.json')).puppeteer.chromium_revision;

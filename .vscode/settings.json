@@ -1,11 +1,10 @@
 {
-    "mark-print.outputDirectory": "sample",
-    "mark-print.markdown-it-include.enable": false,
-    "mark-print.executablePath": "C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe",
-    "mark-print.styles": [
+    "markprint.outputDirectory": "sample",
+    "markprint.markdown-it-include.enable": false,
+    "markprint.executablePath": "C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe",
+    "markprint.styles": [
         "${workspaceFolder}/styles/markprint-magazine.css"
     ],
-    "mark-print.stylesRelativePathFile": false,
-    "debug.node.autoAttach": "on",
-    "mark-print.debug": true
+    "markprint.stylesRelativePathFile": false,
+    "markprint.debug": true
 }

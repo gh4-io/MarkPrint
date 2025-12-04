@@ -2,11 +2,11 @@ markdown-pdf<original_task>
 Fix three issues with the MarkPrint VS Code extension testing environment:
 
 1. **Deprecation Warning**: Address punycode deprecation warning appearing during test execution
-2. **Naming Consistency**: Ensure consistent naming between "MarkPrint" and "mark-print" throughout the project
+2. **Naming Consistency**: Ensure consistent naming between "MarkPrint" and "markprint" throughout the project
 3. **Test File Setup**: Replace `test/suite/mermaid.md` with production SOP document (`.plan/ref/SOP-200_Create_Workpackage_Sequencing_Type.md`) for more realistic testing
 4. **Testing Documentation**: Create comprehensive `TEST.md` with detailed instructions for CLI testing, VS Code debugging, Phase 1 features, WSL2 considerations, and CI/CD setup
 
-Secondary requirement: Preserve original extension command patterns while rebranding from `mark-print` to `mark-print`/`MarkPrint`.
+Secondary requirement: Preserve original extension command patterns while rebranding from `markprint` to `markprint`/`MarkPrint`.
 </original_task>
 
 <work_completed>
@@ -21,18 +21,18 @@ Secondary requirement: Preserve original extension command patterns while rebran
 
 ### package.json (Multiple Changes)
 **Package Identity**:
-- `"name"`: `"mark-print"` → `"mark-print"` (with hyphen, line 2)
+- `"name"`: `"markprint"` → `"markprint"` (with hyphen, line 2)
 - `"displayName"`: `"MarkPrint"` → `"MarkPrint"` (line 3)
 - `"description"`: Updated to mention template system (line 4)
 
 **Commands** (13 total, lines ~80-140):
-- `extension.mark-print.export.settings` → `extension.markprint.export.settings`
-- `extension.mark-print.export.pdf` → `extension.markprint.export.pdf`
-- `extension.mark-print.export.html` → `extension.markprint.export.html`
-- `extension.mark-print.export.png` → `extension.markprint.export.png`
-- `extension.mark-print.export.jpeg` → `extension.markprint.export.jpeg`
-- `extension.mark-print.export.all` → `extension.markprint.export.all`
-- `extension.mark-print.clip` → `extension.markprint.clip`
+- `extension.markprint.export.settings` → `extension.markprint.export.settings`
+- `extension.markprint.export.pdf` → `extension.markprint.export.pdf`
+- `extension.markprint.export.html` → `extension.markprint.export.html`
+- `extension.markprint.export.png` → `extension.markprint.export.png`
+- `extension.markprint.export.jpeg` → `extension.markprint.export.jpeg`
+- `extension.markprint.export.all` → `extension.markprint.export.all`
+- `extension.markprint.clip` → `extension.markprint.clip`
 
 **Phase 1 Commands Added** (lines ~141-160):
 - `markprint.changeBuildMode` (no extension. prefix)
@@ -40,18 +40,18 @@ Secondary requirement: Preserve original extension command patterns while rebran
 - `markprint.reloadTemplates` (no extension. prefix)
 
 **Activation Events** (lines ~30-50):
-- All updated from `onCommand:extension.mark-print.*` → `onCommand:extension.markprint.*`
+- All updated from `onCommand:extension.markprint.*` → `onCommand:extension.markprint.*`
 - Added Phase 1 activation events: `onCommand:markprint.changeBuildMode`, etc.
 
 **Configuration Schema** (~51 settings, lines ~170-850):
-- Namespace changed: `mark-print.*` → `markprint.*`
+- Namespace changed: `markprint.*` → `markprint.*`
 - All config keys updated (e.g., `markprint.outputDirectory`, `markprint.styles`, `markprint.buildMode`)
 
 ### extension.js (Command Registration)
 
 **Export Commands** (lines ~60-90):
 - Preserved `extension.` prefix per original pattern
-- Updated all from `extension.mark-print.*` to `extension.markprint.*`:
+- Updated all from `extension.markprint.*` to `extension.markprint.*`:
 ```javascript
 vscode.commands.registerCommand('extension.markprint.export.settings', async function () {
   await markdownPdf('settings', context);
@@ -80,7 +80,7 @@ vscode.commands.registerCommand('markprint.reloadTemplates', async function () {
 ```
 
 **Configuration Access** (multiple locations):
-- All `getConfiguration('mark-print')` → `getConfiguration('markprint')`
+- All `getConfiguration('markprint')` → `getConfiguration('markprint')`
 - Example line ~200: `var buildMode = vscode.workspace.getConfiguration('markprint')['buildMode'];`
 
 ### test/suite/extension.test.js (Integration Test)
@@ -126,7 +126,7 @@ Changes:
 - Suite name: Updated to "MarkPrint Extension Tests"
 - Test name: "Mermaid Export" → "SOP-200 Export"
 - File path: `mermaid.md` → `SOP-200_Create_Workpackage_Sequencing_Type.md`
-- Command: `extension.mark-print.all` → `extension.markprint.all`
+- Command: `extension.markprint.all` → `extension.markprint.all`
 - Added comprehensive logging for debugging
 - Added try-catch error handling
 - Updated cleanup to match new filename
@@ -141,7 +141,7 @@ Changes:
     "debug.node.autoAttach": "on"
 }
 ```
-- Changed from `mark-print.*` to `markprint.*`
+- Changed from `markprint.*` to `markprint.*`
 
 ### .vscode/launch.json
 
@@ -222,8 +222,8 @@ Added SOP-200 auto-open on debug:
 5. Troubleshooting (extension not found, commands missing, config issues)
 
 **Content**:
-- Every command: `extension.mark-print.*` → `extension.markprint.*`
-- Every config: `mark-print.*` → `markprint.*`
+- Every command: `extension.markprint.*` → `extension.markprint.*`
+- Every config: `markprint.*` → `markprint.*`
 - Search/replace patterns for user configs
 - Phase 1 new commands documented
 
@@ -256,7 +256,7 @@ test/suite/*.bak
 After user clarification, established:
 
 **Package/Project Naming**:
-- Internal name: `mark-print` (with hyphen)
+- Internal name: `markprint` (with hyphen)
 - Display name: `MarkPrint` (CamelCase)
 
 **Command Naming**:
@@ -273,15 +273,15 @@ After user clarification, established:
 ## 6. Error Corrections Made
 
 **Error 1: Incorrect sed replacement removing extension. prefix**
-- Initial mistake: `s/extension\.mark-print\./markprint.export./g`
+- Initial mistake: `s/extension\.markprint\./markprint.export./g`
 - Created: `markprint.export.pdf` instead of `extension.markprint.export.pdf`
-- Fixed with: `s/extension\.mark-print\./extension.markprint./g`
+- Fixed with: `s/extension\.markprint\./extension.markprint./g`
 
 **Error 2: Hyphen in internal name**
-- Initial mistake: Used `mark-print` in command IDs and config calls
-- Created: `extension.mark-print.export.pdf` and corrupted `markp-rint` config access
-- Fixed with: `s/mark-print/markprint/g` across all files
-- Final pattern: `markprint` (no hyphen) in all code, `mark-print` only in package.json "name" field
+- Initial mistake: Used `markprint` in command IDs and config calls
+- Created: `extension.markprint.export.pdf` and corrupted `markp-rint` config access
+- Fixed with: `s/markprint/markprint/g` across all files
+- Final pattern: `markprint` (no hyphen) in all code, `markprint` only in package.json "name" field
 
 ## 7. Commands Executed
 
@@ -294,10 +294,10 @@ cp .plan/ref/SOP-200_Create_Workpackage_Sequencing_Type.md test/suite/
 mv test/suite/mermaid.md test/suite/mermaid.md.bak
 
 # Naming corrections (multiple passes)
-sed -i "s/extension\.mark-print\./extension.markprint./g" extension.js
-sed -i "s/getConfiguration('mark-print')/getConfiguration('markprint')/g" extension.js
-sed -i 's/"name": "markprint"/"name": "mark-print"/' package.json
-sed -i 's/mark-print/markprint/g' package.json  # Remove hyphens from commands/config
+sed -i "s/extension\.markprint\./extension.markprint./g" extension.js
+sed -i "s/getConfiguration('markprint')/getConfiguration('markprint')/g" extension.js
+sed -i 's/"name": "markprint"/"name": "markprint"/' package.json
+sed -i 's/markprint/markprint/g' package.json  # Remove hyphens from commands/config
 
 # Validation
 node -c extension.js  # Syntax check - passed
@@ -394,8 +394,8 @@ When ready to publish:
 
 ### BREAKING CHANGES
 - Extension renamed from "MarkPrint" to "MarkPrint"
-- All commands renamed: `extension.mark-print.*` → `extension.markprint.*`
-- All configuration settings renamed: `mark-print.*` → `markprint.*`
+- All commands renamed: `extension.markprint.*` → `extension.markprint.*`
+- All configuration settings renamed: `markprint.*` → `markprint.*`
 - See MIGRATION.md for complete migration guide
 
 ### Added
@@ -423,8 +423,8 @@ git add .
 git commit -m "feat!: rebrand to MarkPrint with template system
 
 BREAKING CHANGE: All commands and config renamed
-- Commands: extension.mark-print.* → extension.markprint.*
-- Config: mark-print.* → markprint.*
+- Commands: extension.markprint.* → extension.markprint.*
+- Config: markprint.* → markprint.*
 
 See MIGRATION.md for user migration guide.
 
@@ -476,7 +476,7 @@ Create `.github/workflows/test.yml` per TEST.md example (lines 317-349):
 ## 2. Initial Naming Pattern Misunderstanding
 
 **Attempt 1**: Changed everything to `markprint` (no hyphen anywhere)
-**Issue**: User clarified package name should be `mark-print` (with hyphen)
+**Issue**: User clarified package name should be `markprint` (with hyphen)
 **Correction**: Package "name" field uses hyphen, all code uses no hyphen
 
 **Attempt 2**: Removed `extension.` prefix from all commands
@@ -516,7 +516,7 @@ Create `.github/workflows/test.yml` per TEST.md example (lines 317-349):
 
 **Two distinct patterns exist in this codebase**:
 
-**Pattern A - Export Commands** (original mark-print functionality):
+**Pattern A - Export Commands** (original markprint functionality):
 - Use `extension.` prefix
 - Examples: `extension.markprint.export.pdf`, `extension.markprint.export.html`
 - Registered in extension.js lines ~60-90
@@ -607,7 +607,7 @@ These are initialized in extension.js `activate()` function and register 3 new c
 - (whats-next.md will be added to this list)
 
 **Recent commits**:
-- db2899d "Full rebrand to MarkPring (mark-print)" (typo in message: "MarkPring")
+- db2899d "Full rebrand to MarkPring (markprint)" (typo in message: "MarkPring")
 - 64ad3a2 "Add template foundations phase1"
 
 **Ready for commit**: All rebrand changes once testing verified
@@ -627,7 +627,7 @@ Test cleanup in extension.test.js assumes files export to `test/suite/` director
 ## 8. File Naming Convention
 
 User follows hyphenated naming:
-- `mark-print` (package name)
+- `markprint` (package name)
 - `SOP-200_Create_Workpackage_Sequencing_Type.md` (underscores, not hyphens for spaces)
 
 Configuration and code use no hyphens:
@@ -670,7 +670,7 @@ Testing with SOP-200 validates real-world rendering vs. simple mermaid diagram.
 
 ### Complete ✓
 1. **Cheerio upgrade**: package.json updated, 0.20.0 → 1.1.2
-2. **Package rebrand**: "mark-print" with display "MarkPrint"
+2. **Package rebrand**: "markprint" with display "MarkPrint"
 3. **Command rebrand**: All 13+ commands updated to `extension.markprint.*` pattern
 4. **Config rebrand**: All 51+ settings updated to `markprint.*` namespace
 5. **Test file setup**: SOP-200 copied to test/suite/, mermaid.md backed up
@@ -751,4 +751,13 @@ None currently in place. All changes are permanent architecture updates.
 - Registered a VS Code task (`.vscode/tasks.json`) named “Prepare Test Workspace” and set both “Run Extension” and “Extension Tests” launch configs to call it via `preLaunchTask`, also passing `${workspaceFolder}/test/.test-workspace` as the workspace folder argument so the Extension Development Host opens the isolated sandbox.
 - Added `test/.test-workspace/` to `.gitignore` to keep the generated workspace out of source control.
 - Result: Phase 1 template registry now finds workspace templates/SOP content in a safe throwaway folder, so automated tests and F5 sessions run against realistic data without requiring major architectural changes.
+</context_update>
+
+<context_update timestamp="2025-12-04T15:45-0500">
+## CSS Injection Order & Debug Notes
+- Custom styles declared through `markprint.styles` still compete with the default files injected by `readStyles()` (`extension.js` around lines 810-880). Review that function to ensure user styles load last or gate `styles/mark-print.css` behind a setting. See `TODO.md` for the troubleshooting checklist.
+- `.plan/tools/prepare-test-workspace.js` now mirrors the root `.vscode/` folder and every stylesheet in `/styles/` into `test/.test-workspace`, and it purges generated `.html/.pdf/.png/.jpeg/.jpg` before seeding templates/SOP docs.
+- Temp exports (`*_tmp.html`) are deleted in `finally`, so failed Puppeteer runs no longer leave files behind when `markprint.debug` is false.
+- Make sure `styles/markprint.css` exists (or disable `markprint.includeDefaultStyles`) to avoid ENOENT during export. Keep custom themes last in `markprint.styles` for consistent overrides.
+- Resource-scoped configuration warnings persist where `vscode.workspace.getConfiguration('markprint')` lacks a document URI; revisit those calls if the logs get noisy.
 </context_update>

@@ -4,7 +4,7 @@ const vscode = require('vscode');
 
 function isEnabled() {
   try {
-    return Boolean(vscode.workspace.getConfiguration('mark-print')['debug']);
+    return Boolean(vscode.workspace.getConfiguration('markprint')['debug']);
   } catch (error) {
     return false;
   }

@@ -88,6 +88,9 @@ class SchemaValidator {
     }
 
     // Validate
+    if (schema.$id) {
+      this.ajv.removeSchema(schema.$id);
+    }
     const validate = this.ajv.compile(relaxedSchema);
     const valid = validate(frontMatter);
 

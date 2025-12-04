@@ -78,13 +78,14 @@ code {
 }
 
 blockquote {
-  border-radius: 30px;
+  border-radius: 00px;
   background: var(--mag-highlight);
   border: none;
   padding: 1.5rem 2rem;
   color: #4a3f55;
   position: relative;
   margin: 1.5rem 0;
+  
 }
 
 blockquote::before {
@@ -132,11 +133,15 @@ table tbody tr:nth-child(even) {
 }
 
 .callout.warning {
-  background: linear-gradient(120deg, rgba(255, 190, 92, 0.2), rgba(255, 118, 118, 0.15));
+  background: radial-gradient(circle at top left, rgba(255, 215, 141, 0.85), rgba(255, 163, 120, 0.75));
+  color: #4d2c1a;
+  box-shadow: 0 18px 40px rgba(255, 163, 120, 0.35);
 }
 
 .callout.danger {
-  background: linear-gradient(120deg, rgba(255, 118, 118, 0.25), rgba(255, 137, 187, 0.2));
+  background: radial-gradient(circle at bottom right, rgba(255, 137, 187, 0.85), rgba(255, 118, 118, 0.75));
+  color: #4f1024;
+  box-shadow: 0 18px 40px rgba(255, 118, 118, 0.4);
 }
 
 .metadata-grid {

@@ -8,10 +8,15 @@ const testWorkspace = path.join(repoRoot, 'test', '.test-workspace');
 const templateSrc = path.join(repoRoot, 'templates', 'standard-letter.json');
 const schemaSrc = path.join(repoRoot, '.markprint', 'schemas', 'standard-letter.schema.json');
 const sopSrc = path.join(repoRoot, '.plan', 'ref', 'SOP-200_Create_Workackage_Sequencing_Type.md');
+const stylesSrc = path.join(repoRoot, 'styles');
+const vscodeConfigSrc = path.join(repoRoot, '.vscode');
 
 const templateDest = path.join(testWorkspace, '.markprint', 'templates', path.basename(templateSrc));
 const schemaDest = path.join(testWorkspace, '.markprint', 'schemas', path.basename(schemaSrc));
 const sopDest = path.join(testWorkspace, path.basename(sopSrc));
+const stylesDest = path.join(testWorkspace, 'styles');
+const vscodeConfigDest = path.join(testWorkspace, '.vscode');
+const GENERATED_EXTENSIONS = new Set(['.html', '.pdf', '.png', '.jpeg', '.jpg']);
 
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -23,6 +28,51 @@ function copyFile(src, dest) {
   }
   ensureDir(path.dirname(dest));
   fs.copyFileSync(src, dest);
+}
+
+function copyDirectory(srcDir, destDir) {
+  if (!fs.existsSync(srcDir)) {
+    return;
+  }
+
+  ensureDir(destDir);
+  for (const entry of fs.readdirSync(srcDir)) {
+    const srcPath = path.join(srcDir, entry);
+    const destPath = path.join(destDir, entry);
+    const stats = fs.statSync(srcPath);
+
+    if (stats.isDirectory()) {
+      copyDirectory(srcPath, destPath);
+    } else {
+      ensureDir(path.dirname(destPath));
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+function cleanGeneratedFiles(dir) {
+  if (!fs.existsSync(dir)) {
+    return;
+  }
+
+  for (const entry of fs.readdirSync(dir)) {
+    const fullPath = path.join(dir, entry);
+    const stats = fs.statSync(fullPath);
+
+    if (stats.isDirectory()) {
+      cleanGeneratedFiles(fullPath);
+      continue;
+    }
+
+    const ext = path.extname(entry).toLowerCase();
+    if (GENERATED_EXTENSIONS.has(ext)) {
+      try {
+        fs.unlinkSync(fullPath);
+      } catch (error) {
+        console.warn('Failed to remove generated file:', fullPath, error.message);
+      }
+    }
+  }
 }
 
 function main() {
@@ -37,9 +87,12 @@ function main() {
   }
 
   ensureDir(testWorkspace);
+  cleanGeneratedFiles(testWorkspace);
   copyFile(templateSrc, templateDest);
   copyFile(schemaSrc, schemaDest);
   copyFile(sopSrc, sopDest);
+  copyDirectory(stylesSrc, stylesDest);
+  copyDirectory(vscodeConfigSrc, vscodeConfigDest);
 
   console.log('Test workspace prepared at', testWorkspace);
 }

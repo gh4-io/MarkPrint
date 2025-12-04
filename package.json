@@ -1,5 +1,5 @@
 {
-  "name": "mark-print",
+  "name": "markprint",
   "displayName": "MarkPrint",
   "description": "Convert Markdown to PDF",
   "version": "1.5.0",
@@ -25,46 +25,46 @@
     "url": "https://github.com/gh4-io/MarkPrint.git"
   },
   "activationEvents": [
-    "onCommand:extension.mark-print.settings",
-    "onCommand:extension.mark-print.pdf",
-    "onCommand:extension.mark-print.html",
-    "onCommand:extension.mark-print.png",
-    "onCommand:extension.mark-print.jpeg",
-    "onCommand:extension.mark-print.all",
+    "onCommand:extension.markprint.settings",
+    "onCommand:extension.markprint.pdf",
+    "onCommand:extension.markprint.html",
+    "onCommand:extension.markprint.png",
+    "onCommand:extension.markprint.jpeg",
+    "onCommand:extension.markprint.all",
     "onLanguage:markdown"
   ],
   "main": "./extension",
   "contributes": {
     "commands": [
       {
-        "command": "extension.mark-print.settings",
+        "command": "extension.markprint.settings",
         "title": "MarkPrint: Export (settings.json)",
-        "group": "mark-print"
+        "group": "markprint"
       },
       {
-        "command": "extension.mark-print.pdf",
+        "command": "extension.markprint.pdf",
         "title": "MarkPrint: Export (PDF)",
-        "group": "mark-print"
+        "group": "markprint"
       },
       {
-        "command": "extension.mark-print.html",
+        "command": "extension.markprint.html",
         "title": "MarkPrint: Export (html)",
-        "group": "mark-print"
+        "group": "markprint"
       },
       {
-        "command": "extension.mark-print.png",
+        "command": "extension.markprint.png",
         "title": "MarkPrint: Export (png)",
-        "group": "mark-print"
+        "group": "markprint"
       },
       {
-        "command": "extension.mark-print.jpeg",
+        "command": "extension.markprint.jpeg",
         "title": "MarkPrint: Export (jpeg)",
-        "group": "mark-print"
+        "group": "markprint"
       },
       {
-        "command": "extension.mark-print.all",
+        "command": "extension.markprint.all",
         "title": "MarkPrint: Export (all: pdf, html, png, jpeg)",
-        "group": "mark-print"
+        "group": "markprint"
       },
       {
         "command": "markprint.changeBuildMode",
@@ -86,59 +86,59 @@
       "commandPalette": [
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.settings"
+          "command": "extension.markprint.settings"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.pdf"
+          "command": "extension.markprint.pdf"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.html"
+          "command": "extension.markprint.html"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.png"
+          "command": "extension.markprint.png"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.jpeg"
+          "command": "extension.markprint.jpeg"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.all"
+          "command": "extension.markprint.all"
         }
       ],
       "editor/context": [
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.settings",
-          "group": "mark-print@1"
+          "command": "extension.markprint.settings",
+          "group": "markprint@1"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.pdf",
-          "group": "mark-print@2"
+          "command": "extension.markprint.pdf",
+          "group": "markprint@2"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.html",
-          "group": "mark-print@3"
+          "command": "extension.markprint.html",
+          "group": "markprint@3"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.png",
-          "group": "mark-print@4"
+          "command": "extension.markprint.png",
+          "group": "markprint@4"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.jpeg",
-          "group": "mark-print@5"
+          "command": "extension.markprint.jpeg",
+          "group": "markprint@5"
         },
         {
           "when": "resourceLangId == markdown",
-          "command": "extension.mark-print.all",
-          "group": "mark-print@6"
+          "command": "extension.markprint.all",
+          "group": "markprint@6"
         }
       ]
     },
@@ -146,7 +146,7 @@
       "type": "object",
       "title": "MarkPrint",
       "properties": {
-        "mark-print.type": {
+        "markprint.type": {
           "type": "array",
           "default": [
             "pdf"
@@ -156,7 +156,7 @@
           },
           "description": "Output format: pdf, html, png, jpeg. Multiple output formats support"
         },
-        "mark-print.convertOnSave": {
+        "markprint.convertOnSave": {
           "type": "boolean",
           "default": false,
           "description": "Enable Auto convert on save. To apply the settings, you need to restart Visual Studio Code"
@@ -172,7 +172,7 @@
           "description": "Build mode: auto (full export on save), manual (export via commands only), hybrid (lightweight preview on save, full export via commands)",
           "scope": "resource"
         },
-        "mark-print.convertOnSaveExclude": {
+        "markprint.convertOnSaveExclude": {
           "type": "array",
           "default": [],
           "items": {
@@ -180,40 +180,40 @@
           },
           "description": "Excluded file name of convertOnSave option"
         },
-        "mark-print.outputDirectory": {
+        "markprint.outputDirectory": {
           "type": "string",
           "default": "",
           "description": "Output Directory."
         },
-        "mark-print.outputDirectoryRelativePathFile": {
+        "markprint.outputDirectoryRelativePathFile": {
           "type": "boolean",
           "default": false,
-          "description": "If mark-print.outputDirectoryRelativePathFile option is set to true, the relative path set with mark-print.outputDirectory is interpreted as relative from the file"
+          "description": "If markprint.outputDirectoryRelativePathFile option is set to true, the relative path set with markprint.outputDirectory is interpreted as relative from the file"
         },
-        "mark-print.styles": {
+        "markprint.styles": {
           "type": "array",
           "default": [],
           "items": {
             "type": "string"
           },
-          "description": "A list of local paths to the stylesheets to use from the mark-print. All '\\' need to be written as '\\\\'."
+          "description": "A list of local paths to the stylesheets to use from the markprint. All '\\' need to be written as '\\\\'."
         },
-        "mark-print.stylesRelativePathFile": {
+        "markprint.stylesRelativePathFile": {
           "type": "boolean",
           "default": false,
-          "description": "If mark-print.stylesRelativePathFile option is set to true, the relative path set with mark-print.styles is interpreted as relative from the file"
+          "description": "If markprint.stylesRelativePathFile option is set to true, the relative path set with markprint.styles is interpreted as relative from the file"
         },
-        "mark-print.includeDefaultStyles": {
+        "markprint.includeDefaultStyles": {
           "type": "boolean",
           "default": true,
-          "description": "Enable the inclusion of default Markdown styles (VSCode, mark-print)"
+          "description": "Enable the inclusion of default Markdown styles (VSCode, markprint)"
         },
-        "mark-print.highlight": {
+        "markprint.highlight": {
           "type": "boolean",
           "default": true,
           "description": "Enable Syntax highlighting"
         },
-        "mark-print.highlightStyle": {
+        "markprint.highlightStyle": {
           "type": [
             "string",
             "null"
@@ -315,51 +315,51 @@
           "default": "",
           "markdownDescription": "Set the style file name. [highlight.js demo](https://highlightjs.org/static/demo/) [highlight.js/src/styles](https://github.com/highlightjs/highlight.js/tree/master/src/styles)"
         },
-        "mark-print.breaks": {
+        "markprint.breaks": {
           "type": "boolean",
           "default": false,
           "description": "Enable line breaks"
         },
-        "mark-print.emoji": {
+        "markprint.emoji": {
           "type": "boolean",
           "default": true,
           "markdownDescription": "Enable emoji. [Emoji cheat sheet](https://www.webfx.com/tools/emoji-cheat-sheet/)"
         },
-        "mark-print.executablePath": {
+        "markprint.executablePath": {
           "type": "string",
           "default": "",
           "description": "Path to a Chromium or Chrome executable to run instead of the bundled Chromium."
         },
-        "mark-print.scale": {
+        "markprint.scale": {
           "type": "number",
           "default": 1,
           "description": "Scale of the page rendering."
         },
-        "mark-print.displayHeaderFooter": {
+        "markprint.displayHeaderFooter": {
           "type": "boolean",
           "default": true,
           "description": "pdf only. Display header and footer.",
           "scope": "resource"
         },
-        "mark-print.headerTemplate": {
+        "markprint.headerTemplate": {
           "type": "string",
           "default": "<div style=\"font-size: 9px; margin-left: 1cm;\"> <span class='title'></span></div> <div style=\"font-size: 9px; margin-left: auto; margin-right: 1cm; \">%%ISO-DATE%%</div>",
           "description": "pdf only. HTML template for the print header.",
           "scope": "resource"
         },
-        "mark-print.footerTemplate": {
+        "markprint.footerTemplate": {
           "type": "string",
           "default": "<div style=\"font-size: 9px; margin: 0 auto;\"> <span class='pageNumber'></span> / <span class='totalPages'></span></div>",
           "description": "pdf only. HTML template for the print footer.",
           "scope": "resource"
         },
-        "mark-print.printBackground": {
+        "markprint.printBackground": {
           "type": "boolean",
           "default": true,
           "description": "pdf only. Print background graphics.",
           "scope": "resource"
         },
-        "mark-print.orientation": {
+        "markprint.orientation": {
           "type": "string",
           "enum": [
             "portrait",
@@ -369,13 +369,13 @@
           "description": "pdf only. Paper orientation. portrait or landscape.",
           "scope": "resource"
         },
-        "mark-print.pageRanges": {
+        "markprint.pageRanges": {
           "type": "string",
           "default": "",
           "description": "pdf only. Paper ranges to print, e.g., '1-5, 8, 11-13'.",
           "scope": "resource"
         },
-        "mark-print.format": {
+        "markprint.format": {
           "type": "string",
           "enum": [
             "Letter",
@@ -394,48 +394,48 @@
           "description": "pdf only. Paper format [Letter, Legal, Tabloid, Ledger, A0, A1, A2, A3, A4, A5, A6].",
           "scope": "resource"
         },
-        "mark-print.width": {
+        "markprint.width": {
           "type": "string",
           "default": "",
-          "description": "pdf only. Paper width, accepts values labeled with units(mm, cm, in, px). If it is set, it overrides the mark-print.format option.",
+          "description": "pdf only. Paper width, accepts values labeled with units(mm, cm, in, px). If it is set, it overrides the markprint.format option.",
           "scope": "resource"
         },
-        "mark-print.height": {
+        "markprint.height": {
           "type": "string",
           "default": "",
-          "description": "pdf only. Paper height, accepts values labeled with units(mm, cm, in, px). If it is set, it overrides the mark-print.format option.",
+          "description": "pdf only. Paper height, accepts values labeled with units(mm, cm, in, px). If it is set, it overrides the markprint.format option.",
           "scope": "resource"
         },
-        "mark-print.margin.top": {
+        "markprint.margin.top": {
           "type": "string",
           "default": "1.5cm",
           "description": "Page Option. Border Top. units: mm, cm, in, px",
           "scope": "resource"
         },
-        "mark-print.margin.bottom": {
+        "markprint.margin.bottom": {
           "type": "string",
           "default": "1cm",
           "description": "Page Option. Border bottom. units: mm, cm, in, px",
           "scope": "resource"
         },
-        "mark-print.margin.right": {
+        "markprint.margin.right": {
           "type": "string",
           "default": "1cm",
           "description": "Page Option. Border right. units: mm, cm, in, px",
           "scope": "resource"
         },
-        "mark-print.margin.left": {
+        "markprint.margin.left": {
           "type": "string",
           "default": "1cm",
           "description": "Page Option. Border left. units: mm, cm, in, px",
           "scope": "resource"
         },
-        "mark-print.quality": {
+        "markprint.quality": {
           "type": "number",
           "default": 100,
           "description": "jpeg only. The quality of the image, between 0-100. Not applicable to png images."
         },
-        "mark-print.clip.x": {
+        "markprint.clip.x": {
           "type": [
             "number",
             "null"
@@ -443,7 +443,7 @@
           "default": "",
           "description": "png and jpeg only. x-coordinate of top-left corner of clip area."
         },
-        "mark-print.clip.y": {
+        "markprint.clip.y": {
           "type": [
             "number",
             "null"
@@ -451,7 +451,7 @@
           "default": "",
           "description": "png and jpeg only. y-coordinate of top-left corner of clip area."
         },
-        "mark-print.clip.width": {
+        "markprint.clip.width": {
           "type": [
             "number",
             "null"
@@ -459,7 +459,7 @@
           "default": "",
           "description": "png and jpeg only. width of clipping area."
         },
-        "mark-print.clip.height": {
+        "markprint.clip.height": {
           "type": [
             "number",
             "null"
@@ -467,40 +467,45 @@
           "default": "",
           "description": "png and jpeg only. height of clipping area."
         },
-        "mark-print.omitBackground": {
+        "markprint.omitBackground": {
           "type": "boolean",
           "default": false,
           "description": "png and jpeg only. Hides default white background and allows capturing screenshots with transparency."
         },
-        "mark-print.plantumlOpenMarker": {
+        "markprint.plantumlOpenMarker": {
           "type": "string",
           "default": "@startuml",
           "description": "Oppening delimiter used for the plantuml parser."
         },
-        "mark-print.plantumlCloseMarker": {
+        "markprint.plantumlCloseMarker": {
           "type": "string",
           "default": "@enduml",
           "description": "Closing delimiter used for the plantuml parser."
         },
-        "mark-print.plantumlServer": {
+        "markprint.plantumlServer": {
           "type": "string",
           "default": "http://www.plantuml.com/plantuml",
           "description": "plantuml server"
         },
-        "mark-print.StatusbarMessageTimeout": {
+        "markprint.StatusbarMessageTimeout": {
           "type": "number",
           "default": 10000,
           "description": "Statusbar message timeout [milliseconds]"
         },
-        "mark-print.markdown-it-include.enable": {
+        "markprint.markdown-it-include.enable": {
           "type": "boolean",
           "default": true,
           "description": "Enable markdown-it-include. "
         },
-        "mark-print.mermaidServer": {
+        "markprint.mermaidServer": {
           "type": "string",
           "default": "https://unpkg.com/mermaid/dist/mermaid.min.js",
           "description": "mermaid server."
+        },
+        "markprint.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose MarkPrint diagnostics in the Debug Console."
         }
       }
     }

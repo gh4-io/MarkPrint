@@ -28,7 +28,7 @@ This extension converts Markdown files to pdf, html, png or jpeg files.
 - Default Date Format for PDF Headers and Footers Modified
   - Starting from version 1.5.0, the default date format for headers and footers has been changed to the ISO-based format (YYYY-MM-DD).
   - This change aims to improve the consistency of date displays, as the previous format could vary depending on the environment.
-  - If you wish to use the previous format, please refer to [mark-print.headerTemplate](#mark-printheadertemplate).
+  - If you wish to use the previous format, please refer to [markprint.headerTemplate](#markprintheadertemplate).
 
 ## Features
 
@@ -135,7 +135,7 @@ During downloading, the message `Installing Chromium` is displayed in the status
 
 If you are behind a proxy, set the `http.proxy` option to settings.json and restart Visual Studio Code.
 
-If the download is not successful or you want to avoid downloading every time you upgrade MarkPrint, please specify the installed [Chrome](https://www.google.co.jp/chrome/) or 'Chromium' with [mark-print.executablePath](#mark-printexecutablepath) option.
+If the download is not successful or you want to avoid downloading every time you upgrade MarkPrint, please specify the installed [Chrome](https://www.google.co.jp/chrome/) or 'Chromium' with [markprint.executablePath](#markprintexecutablepath) option.
 
 <div class="page"/>
 
@@ -146,12 +146,12 @@ If the download is not successful or you want to avoid downloading every time yo
 1. Open the Markdown file
 1. Press `F1` or `Ctrl+Shift+P`
 1. Type `export` and select below
-   * `mark-print: Export (settings.json)`
-   * `mark-print: Export (pdf)`
-   * `mark-print: Export (html)`
-   * `mark-print: Export (png)`
-   * `mark-print: Export (jpeg)`
-   * `mark-print: Export (all: pdf, html, png, jpeg)`
+   * `markprint: Export (settings.json)`
+   * `markprint: Export (pdf)`
+   * `markprint: Export (html)`
+   * `markprint: Export (png)`
+   * `markprint: Export (jpeg)`
+   * `markprint: Export (all: pdf, html, png, jpeg)`
 
 ![usage1](images/usage1.gif)
 
@@ -159,18 +159,18 @@ If the download is not successful or you want to avoid downloading every time yo
 
 1. Open the Markdown file
 1. Right click and select below
-   * `mark-print: Export (settings.json)`
-   * `mark-print: Export (pdf)`
-   * `mark-print: Export (html)`
-   * `mark-print: Export (png)`
-   * `mark-print: Export (jpeg)`
-   * `mark-print: Export (all: pdf, html, png, jpeg)`
+   * `markprint: Export (settings.json)`
+   * `markprint: Export (pdf)`
+   * `markprint: Export (html)`
+   * `markprint: Export (png)`
+   * `markprint: Export (jpeg)`
+   * `markprint: Export (all: pdf, html, png, jpeg)`
 
 ![usage2](images/usage2.gif)
 
 ### Auto convert
 
-1. Add `"mark-print.convertOnSave": true` option to **settings.json**
+1. Add `"markprint.convertOnSave": true` option to **settings.json**
 1. Restart Visual Studio Code
 1. Open the Markdown file
 1. Auto convert on save
@@ -180,8 +180,8 @@ If the download is not successful or you want to avoid downloading every time yo
 [Visual Studio Code User and Workspace Settings](https://code.visualstudio.com/docs/customization/userandworkspace)
 
 1. Select **File > Preferences > UserSettings or Workspace Settings**
-1. Find mark-print settings in the **Default Settings**
-1. Copy `mark-print.*` settings
+1. Find markprint settings in the **Default Settings**
+1. Copy `markprint.*` settings
 1. Paste to the **settings.json**, and change the value
 
 ![demo](images/settings.gif)
@@ -192,54 +192,54 @@ If the download is not successful or you want to avoid downloading every time yo
 
 |Category|Option name|[Configuration scope](https://code.visualstudio.com/api/references/contribution-points#Configuration-property-schema)|
 |:---|:---|:---|
-|[Save options](#save-options)|[mark-print.type](#mark-printtype)| |
-||[mark-print.convertOnSave](#mark-printconvertonsave)| |
-||[mark-print.convertOnSaveExclude](#mark-printconvertonsaveexclude)| |
-||[mark-print.outputDirectory](#mark-printoutputdirectory)| |
-||[mark-print.outputDirectoryRelativePathFile](#mark-printoutputdirectoryrelativepathfile)| |
-|[Styles options](#styles-options)|[mark-print.styles](#mark-printstyles)| |
-||[mark-print.stylesRelativePathFile](#mark-printstylesrelativepathfile)| |
-||[mark-print.includeDefaultStyles](#mark-printincludedefaultstyles)| |
-|[Syntax highlight options](#syntax-highlight-options)|[mark-print.highlight](#mark-printhighlight)| |
-||[mark-print.highlightStyle](#mark-printhighlightstyle)| |
-|[Markdown options](#markdown-options)|[mark-print.breaks](#mark-printbreaks)| |
-|[Emoji options](#emoji-options)|[mark-print.emoji](#mark-printemoji)| |
-|[Configuration options](#configuration-options)|[mark-print.executablePath](#mark-printexecutablepath)| |
-|[Common Options](#common-options)|[mark-print.scale](#mark-printscale)| |
-|[PDF options](#pdf-options)|[mark-print.displayHeaderFooter](#mark-printdisplayheaderfooter)|resource|
-||[mark-print.headerTemplate](#mark-printheadertemplate)|resource|
-||[mark-print.footerTemplate](#mark-printfootertemplate)|resource|
-||[mark-print.printBackground](#mark-printprintbackground)|resource|
-||[mark-print.orientation](#mark-printorientation)|resource|
-||[mark-print.pageRanges](#mark-printpageranges)|resource|
-||[mark-print.format](#mark-printformat)|resource|
-||[mark-print.width](#mark-printwidth)|resource|
-||[mark-print.height](#mark-printheight)|resource|
-||[mark-print.margin.top](#mark-printmargintop)|resource|
-||[mark-print.margin.bottom](#mark-printmarginbottom)|resource|
-||[mark-print.margin.right](#mark-printmarginright)|resource|
-||[mark-print.margin.left](#mark-printmarginleft)|resource|
-|[PNG JPEG options](#png-jpeg-options)|[mark-print.quality](#mark-printquality)| |
-||[mark-print.clip.x](#mark-printclipx)| |
-||[mark-print.clip.y](#mark-printclipy)| |
-||[mark-print.clip.width](#mark-printclipwidth)| |
-||[mark-print.clip.height](#mark-printclipheight)| |
-||[mark-print.omitBackground](#mark-printomitbackground)| |
-|[PlantUML options](#plantuml-options)|[mark-print.plantumlOpenMarker](#mark-printplantumlopenmarker)| |
-||[mark-print.plantumlCloseMarker](#mark-printplantumlclosemarker)| |
-||[mark-print.plantumlServer](#mark-printplantumlserver)| |
-|[markdown-it-include options](#markdown-it-include-options)|[mark-print.markdown-it-include.enable](#mark-printmarkdown-it-includeenable)| |
-|[mermaid options](#mermaid-options)|[mark-print.mermaidServer](#mark-printmermaidserver)| |
+|[Save options](#save-options)|[markprint.type](#markprinttype)| |
+||[markprint.convertOnSave](#markprintconvertonsave)| |
+||[markprint.convertOnSaveExclude](#markprintconvertonsaveexclude)| |
+||[markprint.outputDirectory](#markprintoutputdirectory)| |
+||[markprint.outputDirectoryRelativePathFile](#markprintoutputdirectoryrelativepathfile)| |
+|[Styles options](#styles-options)|[markprint.styles](#markprintstyles)| |
+||[markprint.stylesRelativePathFile](#markprintstylesrelativepathfile)| |
+||[markprint.includeDefaultStyles](#markprintincludedefaultstyles)| |
+|[Syntax highlight options](#syntax-highlight-options)|[markprint.highlight](#markprinthighlight)| |
+||[markprint.highlightStyle](#markprinthighlightstyle)| |
+|[Markdown options](#markdown-options)|[markprint.breaks](#markprintbreaks)| |
+|[Emoji options](#emoji-options)|[markprint.emoji](#markprintemoji)| |
+|[Configuration options](#configuration-options)|[markprint.executablePath](#markprintexecutablepath)| |
+|[Common Options](#common-options)|[markprint.scale](#markprintscale)| |
+|[PDF options](#pdf-options)|[markprint.displayHeaderFooter](#markprintdisplayheaderfooter)|resource|
+||[markprint.headerTemplate](#markprintheadertemplate)|resource|
+||[markprint.footerTemplate](#markprintfootertemplate)|resource|
+||[markprint.printBackground](#markprintprintbackground)|resource|
+||[markprint.orientation](#markprintorientation)|resource|
+||[markprint.pageRanges](#markprintpageranges)|resource|
+||[markprint.format](#markprintformat)|resource|
+||[markprint.width](#markprintwidth)|resource|
+||[markprint.height](#markprintheight)|resource|
+||[markprint.margin.top](#markprintmargintop)|resource|
+||[markprint.margin.bottom](#markprintmarginbottom)|resource|
+||[markprint.margin.right](#markprintmarginright)|resource|
+||[markprint.margin.left](#markprintmarginleft)|resource|
+|[PNG JPEG options](#png-jpeg-options)|[markprint.quality](#markprintquality)| |
+||[markprint.clip.x](#markprintclipx)| |
+||[markprint.clip.y](#markprintclipy)| |
+||[markprint.clip.width](#markprintclipwidth)| |
+||[markprint.clip.height](#markprintclipheight)| |
+||[markprint.omitBackground](#markprintomitbackground)| |
+|[PlantUML options](#plantuml-options)|[markprint.plantumlOpenMarker](#markprintplantumlopenmarker)| |
+||[markprint.plantumlCloseMarker](#markprintplantumlclosemarker)| |
+||[markprint.plantumlServer](#markprintplantumlserver)| |
+|[markdown-it-include options](#markdown-it-include-options)|[markprint.markdown-it-include.enable](#markprintmarkdown-it-includeenable)| |
+|[mermaid options](#mermaid-options)|[markprint.mermaidServer](#markprintmermaidserver)| |
 
 ### Save options
 
-#### `mark-print.type`
+#### `markprint.type`
   - Output format: pdf, html, png, jpeg
   - Multiple output formats support
   - Default: pdf
 
 ```javascript
-"mark-print.type": [
+"markprint.type": [
   "pdf",
   "html",
   "png",
@@ -247,16 +247,16 @@ If the download is not successful or you want to avoid downloading every time yo
 ],
 ```
 
-#### `mark-print.convertOnSave`
+#### `markprint.convertOnSave`
   - Enable Auto convert on save
   - boolean. Default: false
   - To apply the settings, you need to restart Visual Studio Code
 
-#### `mark-print.convertOnSaveExclude`
+#### `markprint.convertOnSaveExclude`
   - Excluded file name of convertOnSave option
 
 ```javascript
-"mark-print.convertOnSaveExclude": [
+"markprint.convertOnSaveExclude": [
   "^work",
   "work.md$",
   "work|test",
@@ -265,12 +265,12 @@ If the download is not successful or you want to avoid downloading every time yo
 ],
 ```
 
-#### `mark-print.outputDirectory`
+#### `markprint.outputDirectory`
   - Output Directory
   - All `\` need to be written as `\\` (Windows)
 
 ```javascript
-"mark-print.outputDirectory": "C:\\work\\output",
+"markprint.outputDirectory": "C:\\work\\output",
 ```
 
   - Relative path
@@ -280,35 +280,35 @@ If the download is not successful or you want to avoid downloading every time yo
       - See [Multi-root Workspaces](https://code.visualstudio.com/docs/editor/multi-root-workspaces)
 
 ```javascript
-"mark-print.outputDirectory": "output",
+"markprint.outputDirectory": "output",
 ```
 
   - Relative path (home directory)
     - If path starts with  `~`, it will be interpreted as a relative path from the home directory
 
 ```javascript
-"mark-print.outputDirectory": "~/output",
+"markprint.outputDirectory": "~/output",
 ```
 
   - If you set a directory with a `relative path`, it will be created if the directory does not exist
   - If you set a directory with an `absolute path`, an error occurs if the directory does not exist
 
-#### `mark-print.outputDirectoryRelativePathFile`
-  - If `mark-print.outputDirectoryRelativePathFile` option is set to `true`, the relative path set with [mark-print.outputDirectory](#mark-printoutputDirectory) is interpreted as relative from the file
+#### `markprint.outputDirectoryRelativePathFile`
+  - If `markprint.outputDirectoryRelativePathFile` option is set to `true`, the relative path set with [markprint.outputDirectory](#markprintoutputDirectory) is interpreted as relative from the file
   - It can be used to avoid relative paths from folders and workspaces
   - boolean. Default: false
 
 ### Styles options
 
-#### `mark-print.styles`
-  - A list of local paths to the stylesheets to use from the mark-print
+#### `markprint.styles`
+  - A list of local paths to the stylesheets to use from the markprint
   - If the file does not exist, it will be skipped
   - All `\` need to be written as `\\` (Windows)
 
 ```javascript
-"mark-print.styles": [
-  "C:\\Users\\<USERNAME>\\Documents\\mark-print.css",
-  "/home/<USERNAME>/settings/mark-print.css",
+"markprint.styles": [
+  "C:\\Users\\<USERNAME>\\Documents\\markprint.css",
+  "/home/<USERNAME>/settings/markprint.css",
 ],
 ```
 
@@ -319,8 +319,8 @@ If the download is not successful or you want to avoid downloading every time yo
       - See [Multi-root Workspaces](https://code.visualstudio.com/docs/editor/multi-root-workspaces)
 
 ```javascript
-"mark-print.styles": [
-  "mark-print.css",
+"markprint.styles": [
+  "markprint.css",
 ],
 ```
 
@@ -328,98 +328,98 @@ If the download is not successful or you want to avoid downloading every time yo
     - If path starts with `~`, it will be interpreted as a relative path from the home directory
 
 ```javascript
-"mark-print.styles": [
-  "~/.config/Code/User/mark-print.css"
+"markprint.styles": [
+  "~/.config/Code/User/markprint.css"
 ],
 ```
 
   - Online CSS (https://xxx/xxx.css) is applied correctly for JPG and PNG, but problems occur with PDF [#67](https://github.com/gh4-io/MarkPrint/issues/67)
 
 ```javascript
-"mark-print.styles": [
-  "https://xxx/mark-print.css"
+"markprint.styles": [
+  "https://xxx/markprint.css"
 ],
 ```
 
-#### `mark-print.stylesRelativePathFile`
+#### `markprint.stylesRelativePathFile`
 
-  - If `mark-print.stylesRelativePathFile` option is set to `true`, the relative path set with [mark-print.styles](#mark-printstyles) is interpreted as relative from the file
+  - If `markprint.stylesRelativePathFile` option is set to `true`, the relative path set with [markprint.styles](#markprintstyles) is interpreted as relative from the file
   - It can be used to avoid relative paths from folders and workspaces
   - boolean. Default: false
 
-#### `mark-print.includeDefaultStyles`
-  - Enable the inclusion of default Markdown styles (VSCode, mark-print)
+#### `markprint.includeDefaultStyles`
+  - Enable the inclusion of default Markdown styles (VSCode, markprint)
   - boolean. Default: true
 
 ### Syntax highlight options
 
-#### `mark-print.highlight`
+#### `markprint.highlight`
   - Enable Syntax highlighting
   - boolean. Default: true
 
-#### `mark-print.highlightStyle`
+#### `markprint.highlightStyle`
   - Set the style file name. for example: github.css, monokai.css ...
   - [file name list](https://github.com/isagalaev/highlight.js/tree/master/src/styles)
   - demo site : https://highlightjs.org/static/demo/
 
 ```javascript
-"mark-print.highlightStyle": "github.css",
+"markprint.highlightStyle": "github.css",
 ```
 
 ### Markdown options
 
-#### `mark-print.breaks`
+#### `markprint.breaks`
   - Enable line breaks
   - boolean. Default: false
 
 ### Emoji options
 
-#### `mark-print.emoji`
+#### `markprint.emoji`
   - Enable emoji. [EMOJI CHEAT SHEET](https://www.webpagefx.com/tools/emoji-cheat-sheet/)
   - boolean. Default: true
 
 ### Configuration options
 
-#### `mark-print.executablePath`
+#### `markprint.executablePath`
   - Path to a Chromium or Chrome executable to run instead of the bundled Chromium
   - All `\` need to be written as `\\` (Windows)
   - To apply the settings, you need to restart Visual Studio Code
 
 ```javascript
-"mark-print.executablePath": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
+"markprint.executablePath": "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe"
 ```
 
 ### Common Options
 
-#### `mark-print.scale`
+#### `markprint.scale`
   - Scale of the page rendering
   - number. default: 1
 
 ```javascript
-"mark-print.scale": 1
+"markprint.scale": 1
 ```
 
 ### PDF options
 
   - pdf only. [puppeteer page.pdf options](https://github.com/puppeteer/puppeteer/blob/main/docs/api/puppeteer.pdfoptions.md)
 
-#### `mark-print.displayHeaderFooter`
+#### `markprint.displayHeaderFooter`
   - Enables header and footer display
   - boolean. Default: true
   - Activating this option will display both the header and footer
   - If you wish to display only one of them, remove the value for the other
   - To hide the header
     ```javascript
-    "mark-print.headerTemplate": "",
+    "markprint.headerTemplate": "",
     ```
   - To hide the footer
     ```javascript
-    "mark-print.footerTemplate": "",
+    "markprint.footerTemplate": "",
     ```
 
-#### `mark-print.headerTemplate`
+#### `markprint.headerTemplate`
   - Specifies the HTML template for outputting the header
-  - To use this option, you must set `mark-print.displayHeaderFooter` to `true`
+  - To use this option, you must set `markprint.displayHeaderFooter` to `true`
   - `<span class='date'></span>` : formatted print date. The format depends on the environment
   - `<span class='title'></span>` : markdown file name
   - `<span class='url'></span>` : markdown full path name
@@ -430,117 +430,117 @@ If the download is not successful or you want to avoid downloading every time yo
   - `%%ISO-TIME%%` : current time in ISO-based format (`hh:mm:ss`)
   - Default (version 1.5.0 and later): Displays the Markdown file name and the date using `%%ISO-DATE%%`
     ```javascript
-    "mark-print.headerTemplate": "<div style=\"font-size: 9px; margin-left: 1cm;\"> <span class='title'></span></div> <div style=\"font-size: 9px; margin-left: auto; margin-right: 1cm; \">%%ISO-DATE%%</div>",
+    "markprint.headerTemplate": "<div style=\"font-size: 9px; margin-left: 1cm;\"> <span class='title'></span></div> <div style=\"font-size: 9px; margin-left: auto; margin-right: 1cm; \">%%ISO-DATE%%</div>",
     ```
   - Default (version 1.4.4 and earlier): Displays the Markdown file name and the date using `<span class='date'></span>`
     ```javascript
-    "mark-print.headerTemplate": "<div style=\"font-size: 9px; margin-left: 1cm;\"> <span class='title'></span></div> <div style=\"font-size: 9px; margin-left: auto; margin-right: 1cm; \"> <span class='date'></span></div>",
+    "markprint.headerTemplate": "<div style=\"font-size: 9px; margin-left: 1cm;\"> <span class='title'></span></div> <div style=\"font-size: 9px; margin-left: auto; margin-right: 1cm; \"> <span class='date'></span></div>",
     ```
 
-#### `mark-print.footerTemplate`
+#### `markprint.footerTemplate`
   - Specifies the HTML template for outputting the footer
-  - For more details, refer to [mark-print.headerTemplate](#mark-printheadertemplate)
+  - For more details, refer to [markprint.headerTemplate](#markprintheadertemplate)
   - Default: Displays the {current page number} / {total pages in the document}
     ```javascript
-    "mark-print.footerTemplate": "<div style=\"font-size: 9px; margin: 0 auto;\"> <span class='pageNumber'></span> / <span class='totalPages'></span></div>",
+    "markprint.footerTemplate": "<div style=\"font-size: 9px; margin: 0 auto;\"> <span class='pageNumber'></span> / <span class='totalPages'></span></div>",
     ```
 
-#### `mark-print.printBackground`
+#### `markprint.printBackground`
   - Print background graphics
   - boolean. Default: true
 
-#### `mark-print.orientation`
+#### `markprint.orientation`
   - Paper orientation
   - portrait or landscape
   - Default: portrait
 
-#### `mark-print.pageRanges`
+#### `markprint.pageRanges`
   - Paper ranges to print, e.g., '1-5, 8, 11-13'
   - Default: all pages
 
 ```javascript
-"mark-print.pageRanges": "1,4-",
+"markprint.pageRanges": "1,4-",
 ```
 
-#### `mark-print.format`
+#### `markprint.format`
   - Paper format
   - Letter, Legal, Tabloid, Ledger, A0, A1, A2, A3, A4, A5, A6
   - Default: A4
 
 ```javascript
-"mark-print.format": "A4",
+"markprint.format": "A4",
 ```
 
-#### `mark-print.width`
-#### `mark-print.height`
+#### `markprint.width`
+#### `markprint.height`
   - Paper width / height, accepts values labeled with units(mm, cm, in, px)
-  - If it is set, it overrides the mark-print.format option
+  - If it is set, it overrides the markprint.format option
 
 ```javascript
-"mark-print.width": "10cm",
-"mark-print.height": "20cm",
+"markprint.width": "10cm",
+"markprint.height": "20cm",
 ```
 
-#### `mark-print.margin.top`
-#### `mark-print.margin.bottom`
-#### `mark-print.margin.right`
-#### `mark-print.margin.left`
+#### `markprint.margin.top`
+#### `markprint.margin.bottom`
+#### `markprint.margin.right`
+#### `markprint.margin.left`
   - Paper margins.units(mm, cm, in, px)
 
 ```javascript
-"mark-print.margin.top": "1.5cm",
-"mark-print.margin.bottom": "1cm",
-"mark-print.margin.right": "1cm",
-"mark-print.margin.left": "1cm",
+"markprint.margin.top": "1.5cm",
+"markprint.margin.bottom": "1cm",
+"markprint.margin.right": "1cm",
+"markprint.margin.left": "1cm",
 ```
 
 ### PNG, JPEG options
 
   - png and jpeg only. [puppeteer page.screenshot options](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagescreenshotoptions)
 
-#### `mark-print.quality`
+#### `markprint.quality`
   - jpeg only. The quality of the image, between 0-100. Not applicable to png images
 
 ```javascript
-"mark-print.quality": 100,
+"markprint.quality": 100,
 ```
 
-#### `mark-print.clip.x`
-#### `mark-print.clip.y`
-#### `mark-print.clip.width`
-#### `mark-print.clip.height`
+#### `markprint.clip.x`
+#### `markprint.clip.y`
+#### `markprint.clip.width`
+#### `markprint.clip.height`
   - An object which specifies clipping region of the page
   - number
 
 ```javascript
 //  x-coordinate of top-left corner of clip area
-"mark-print.clip.x": 0,
+"markprint.clip.x": 0,
 
 // y-coordinate of top-left corner of clip area
-"mark-print.clip.y": 0,
+"markprint.clip.y": 0,
 
 // width of clipping area
-"mark-print.clip.width": 1000,
+"markprint.clip.width": 1000,
 
 // height of clipping area
-"mark-print.clip.height": 1000,
+"markprint.clip.height": 1000,
 ```
 
-#### `mark-print.omitBackground`
+#### `markprint.omitBackground`
   - Hides default white background and allows capturing screenshots with transparency
   - boolean. Default: false
 
 ### PlantUML options
 
-#### `mark-print.plantumlOpenMarker`
+#### `markprint.plantumlOpenMarker`
   - Oppening delimiter used for the plantuml parser.
   - Default: @startuml
 
-#### `mark-print.plantumlCloseMarker`
+#### `markprint.plantumlCloseMarker`
   - Closing delimiter used for the plantuml parser.
   - Default: @enduml
 
-#### `mark-print.plantumlServer`
+#### `markprint.plantumlServer`
   - Plantuml server. e.g. http://localhost:8080
   - Default: http://www.plantuml.com/plantuml
   - For example, to run Plantuml Server locally [#139](https://github.com/gh4-io/MarkPrint/issues/139) :
@@ -551,13 +551,13 @@ If the download is not successful or you want to avoid downloading every time yo
 
 ### markdown-it-include options
 
-#### `mark-print.markdown-it-include.enable`
+#### `markprint.markdown-it-include.enable`
   - Enable markdown-it-include.
   - boolean. Default: true
 
 ### mermaid options
 
-#### `mark-print.mermaidServer`
+#### `markprint.mermaidServer`
   - mermaid server
   - Default: https://unpkg.com/mermaid/dist/mermaid.min.js
 
@@ -567,7 +567,7 @@ If the download is not successful or you want to avoid downloading every time yo
 
 ### How can I change emoji size ?
 
-1. Add the following to your stylesheet which was specified in the mark-print.styles
+1. Add the following to your stylesheet which was specified in the markprint.styles
 
 ```css
 .emoji {
@@ -590,8 +590,8 @@ If you always want to output to the relative path directory from the Markdown fi
 For example, to output to the "output" directory in the same directory as the Markdown file, set it as follows.
 
 ```javascript
-"mark-print.outputDirectory" : "output",
-"mark-print.outputDirectoryRelativePathFile": true,
+"markprint.outputDirectory" : "output",
+"markprint.outputDirectoryRelativePathFile": true,
 ```
 
 ### Page Break
@@ -606,7 +606,7 @@ Please use the following to insert a page break.
 
 ## Known Issues
 
-### `mark-print.styles` option
+### `markprint.styles` option
 * Online CSS (https://xxx/xxx.css) is applied correctly for JPG and PNG, but problems occur with PDF. [#67](https://github.com/gh4-io/MarkPrint/issues/67)
 
 
