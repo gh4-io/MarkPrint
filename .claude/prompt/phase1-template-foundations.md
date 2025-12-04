@@ -1,4 +1,4 @@
-You are Claude Code working inside the MarkPrint (formerly vscode-markdown-pdf) repo.
+You are Claude Code working inside the MarkPrint (formerly vscode-mark-print) repo.
 
 Goal: deliver Phase 1 “Template Foundations”:
 1. Template registry & metadata validation

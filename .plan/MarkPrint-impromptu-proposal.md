@@ -6,7 +6,7 @@ status: Draft
 ---
 
 # 1. Project Context
-- **New name**: MarkPrint (rebranded from vscode-markdown-pdf).
+- **New name**: MarkPrint (rebranded from vscode-mark-print).
 - **Mission**: Deliver a self-contained VS Code extension capable of parsing Markdown with template-aware metadata, applying bespoke layout rules (fonts, paper size, XML/HTML directives, image policies), and producing print-ready + digital outputs.
 - **Non-negotiables**:
   1. **Self-contained runtime** – no external Python/Pandoc/WeasyPrint installs; everything must ship as Node/JS dependencies.

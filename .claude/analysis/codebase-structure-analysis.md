@@ -1,15 +1,15 @@
-# Codebase Analysis: vscode-markdown-pdf
+# Codebase Analysis: mark-print
 
 ## Executive Summary
 
-vscode-markdown-pdf is a VS Code extension that converts Markdown documents to multiple output formats (PDF, HTML, PNG, JPEG). The extension leverages puppeteer-core with Chromium for rendering, markdown-it for parsing, and provides comprehensive support for PlantUML diagrams, Mermaid charts, syntax highlighting, and emoji rendering. The architecture follows a straightforward pipeline pattern: Markdown → HTML → Chromium rendering → Output format. The codebase is relatively compact (~900 lines core logic) with a single-file extension pattern, making it maintainable and easy to understand.
+vscode-mark-print is a VS Code extension that converts Markdown documents to multiple output formats (PDF, HTML, PNG, JPEG). The extension leverages puppeteer-core with Chromium for rendering, markdown-it for parsing, and provides comprehensive support for PlantUML diagrams, Mermaid charts, syntax highlighting, and emoji rendering. The architecture follows a straightforward pipeline pattern: Markdown → HTML → Chromium rendering → Output format. The codebase is relatively compact (~900 lines core logic) with a single-file extension pattern, making it maintainable and easy to understand.
 
 The project demonstrates mature VS Code extension development practices with proper activation events, command registration, configuration management, and multi-root workspace support. Key differentiators include support for auto-conversion on save, flexible output directory configuration, custom styling capabilities, and extensive PDF customization options (headers, footers, margins, page formats).
 
 ## Project Structure
 
 ```
-vscode-markdown-pdf/
+vscode-mark-print/
 ├── .github/
 │   └── FUNDING.yml                    # GitHub sponsorship config
 ├── .vscode/
@@ -32,7 +32,7 @@ vscode-markdown-pdf/
 ├── src/
 │   └── compile.js                     # Pre-publish cleanup script
 ├── styles/
-│   ├── markdown-pdf.css               # Default extension stylesheet
+│   ├── mark-print.css               # Default extension stylesheet
 │   ├── markdown.css                   # Base markdown styles
 │   └── tomorrow.css                   # Default syntax highlight theme
 ├── template/
@@ -212,7 +212,7 @@ User Action (Command/Save)
 2. `markdown.styles` workspace setting
 3. highlight.js theme
 4. Extension default styles
-5. User custom styles (`markdown-pdf.styles`)
+5. User custom styles (`mark-print.styles`)
 
 ---
 
@@ -223,7 +223,7 @@ User Action (Command/Save)
 **Key Files**:
 - `extension.js:683-786` - `readStyles()`, `fixHref()` functions
 - `styles/markdown.css` - Base markdown styles
-- `styles/markdown-pdf.css` - Extension-specific styles
+- `styles/mark-print.css` - Extension-specific styles
 - `styles/tomorrow.css` - Default highlight.js theme
 
 **Responsibilities**:
@@ -264,7 +264,7 @@ User Action (Command/Save)
 **Integration**:
 - Receives complete HTML from `makeHtml()`
 - Uses VSCode Progress API for user feedback
-- Reads extensive configuration from `markdown-pdf.*` settings
+- Reads extensive configuration from `mark-print.*` settings
 - Handles both user-provided Chrome path and auto-downloaded Chromium
 
 **Notable Patterns**:
@@ -410,8 +410,8 @@ User Action (Command/Save)
 
 ```
 1. USER ACTION
-   - Command Palette: "Markdown PDF: Export (pdf)"
-   - Context Menu: Right-click → "Markdown PDF: Export (pdf)"
+   - Command Palette: "MarkPrint: Export (pdf)"
+   - Context Menu: Right-click → "MarkPrint: Export (pdf)"
    - Auto-save: Save markdown file (if convertOnSave enabled)
 
 2. COMMAND HANDLER (extension.js:37-108)
@@ -447,8 +447,8 @@ User Action (Command/Save)
         1. VSCode markdown styles
         2. markdown.styles setting
         3. highlight.js theme (or default tomorrow.css)
-        4. markdown-pdf.css
-        5. User custom styles (markdown-pdf.styles)
+        4. mark-print.css
+        5. User custom styles (mark-print.styles)
      b. Get document title (filename)
      c. Load Mermaid JavaScript CDN URL
      d. Compile Mustache template
@@ -522,10 +522,10 @@ Chromium can load local image
    └─ No style set? → Load styles/tomorrow.css
 
 4. includeDefaultStyles check
-   ├─ TRUE: Load styles/markdown-pdf.css
+   ├─ TRUE: Load styles/mark-print.css
    └─ FALSE: Skip
 
-5. markdown-pdf.styles setting
+5. mark-print.styles setting
    └─ Load each custom stylesheet (local or remote URLs)
 
 All styles concatenated into single <style> tag in template
@@ -535,7 +535,7 @@ All styles concatenated into single <style> tag in template
 
 ### Installation & Setup
 
-1. **Initial Install**: `code --install-extension yzane.markdown-pdf`
+1. **Initial Install**: `code --install-extension gh4-io.mark-print`
 2. **First Run**: Chromium download triggered automatically (~170-280MB)
 3. **Proxy Setup** (if behind corporate firewall):
    ```json
@@ -546,7 +546,7 @@ All styles concatenated into single <style> tag in template
 4. **Custom Chrome Path** (to skip download):
    ```json
    {
-     "markdown-pdf.executablePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+     "mark-print.executablePath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
    }
    ```
 
@@ -555,25 +555,25 @@ All styles concatenated into single <style> tag in template
 **Output Directory Modes**:
 ```json
 {
-  "markdown-pdf.outputDirectory": "~/output",                    // Home relative
-  "markdown-pdf.outputDirectory": "/absolute/path/output",       // Absolute
-  "markdown-pdf.outputDirectory": "output",                      // Workspace/file relative
-  "markdown-pdf.outputDirectoryRelativePathFile": true           // Force file-relative
+  "mark-print.outputDirectory": "~/output",                    // Home relative
+  "mark-print.outputDirectory": "/absolute/path/output",       // Absolute
+  "mark-print.outputDirectory": "output",                      // Workspace/file relative
+  "mark-print.outputDirectoryRelativePathFile": true           // Force file-relative
 }
 ```
 
 **Multi-Format Export**:
 ```json
 {
-  "markdown-pdf.type": ["pdf", "html", "png"]  // Generates all 3 on export
+  "mark-print.type": ["pdf", "html", "png"]  // Generates all 3 on export
 }
 ```
 
 **Auto-Convert on Save**:
 ```json
 {
-  "markdown-pdf.convertOnSave": true,
-  "markdown-pdf.convertOnSaveExclude": [
+  "mark-print.convertOnSave": true,
+  "mark-print.convertOnSaveExclude": [
     "^work",          // Exclude files starting with "work"
     "draft.md$",      // Exclude draft.md
     "temp|test"       // Exclude files with "temp" or "test"
@@ -584,20 +584,20 @@ All styles concatenated into single <style> tag in template
 **Custom Styling**:
 ```json
 {
-  "markdown-pdf.styles": [
+  "mark-print.styles": [
     "~/my-styles/custom.css",
     "./project-styles.css"
   ],
-  "markdown-pdf.includeDefaultStyles": false    // Use only custom styles
+  "mark-print.includeDefaultStyles": false    // Use only custom styles
 }
 ```
 
 **PDF Headers/Footers** (ISO date format as of v1.5.0):
 ```json
 {
-  "markdown-pdf.displayHeaderFooter": true,
-  "markdown-pdf.headerTemplate": "<div style='font-size: 9px;'><span class='title'></span> - %%ISO-DATE%%</div>",
-  "markdown-pdf.footerTemplate": "<div style='font-size: 9px;'><span class='pageNumber'></span>/<span class='totalPages'></span></div>"
+  "mark-print.displayHeaderFooter": true,
+  "mark-print.headerTemplate": "<div style='font-size: 9px;'><span class='title'></span> - %%ISO-DATE%%</div>",
+  "mark-print.footerTemplate": "<div style='font-size: 9px;'><span class='pageNumber'></span>/<span class='totalPages'></span></div>"
 }
 ```
 
@@ -643,18 +643,18 @@ Supported front matter keys: `breaks`, `emoji`, `plantumlOpenMarker`, `plantumlC
 - **Functions**: camelCase, descriptive verbs (`convertMarkdownToHtml`, `exportPdf`)
 - **Variables**: camelCase, descriptive nouns (`mdfilename`, `outputDir`)
 - **Constants**: SCREAMING_SNAKE_CASE (`INSTALL_CHECK`)
-- **Settings**: kebab-case with namespace (`markdown-pdf.outputDirectory`)
+- **Settings**: kebab-case with namespace (`mark-print.outputDirectory`)
 
 ### VS Code Extension Patterns
 
 1. **Activation Events**:
-   - Command activation: `onCommand:extension.markdown-pdf.*`
+   - Command activation: `onCommand:extension.mark-print.*`
    - Language activation: `onLanguage:markdown`
    - Lazy loading: Extension loads only when markdown file opened
 
 2. **Command Registration**:
    - 6 commands registered in array, pushed to subscriptions
-   - Command IDs: `extension.markdown-pdf.{settings|pdf|html|png|jpeg|all}`
+   - Command IDs: `extension.mark-print.{settings|pdf|html|png|jpeg|all}`
 
 3. **Context Menus**:
    - Commands appear in both Command Palette and editor context menu
@@ -667,7 +667,7 @@ Supported front matter keys: `breaks`, `emoji`, `plantumlOpenMarker`, `plantumlC
 5. **Progress Indication**:
    - Status bar messages for quick feedback
    - Progress notifications for long operations
-   - Configurable timeout: `markdown-pdf.StatusbarMessageTimeout`
+   - Configurable timeout: `mark-print.StatusbarMessageTimeout`
 
 ### Security Considerations
 
@@ -707,14 +707,14 @@ To add support for a new format (e.g., DOCX):
 2. **Add command** (package.json:38-42):
    ```json
    {
-     "command": "extension.markdown-pdf.docx",
-     "title": "Markdown PDF: Export (docx)"
+     "command": "extension.mark-print.docx",
+     "title": "MarkPrint: Export (docx)"
    }
    ```
 
 3. **Register command** (extension.js:12-19):
    ```javascript
-   vscode.commands.registerCommand('extension.markdown-pdf.docx', async () => {
+   vscode.commands.registerCommand('extension.mark-print.docx', async () => {
      await markdownPdf('docx');
    })
    ```
@@ -743,7 +743,7 @@ To add a new markdown feature:
 
 3. **Add configuration** (package.json:130-480):
    ```json
-   "markdown-pdf.footnote.enable": {
+   "mark-print.footnote.enable": {
      "type": "boolean",
      "default": true,
      "description": "Enable footnote support"
@@ -754,12 +754,12 @@ To add a new markdown feature:
 
 For organization-specific branding:
 
-1. Create custom CSS file: `~/.config/markdown-pdf/corporate.css`
+1. Create custom CSS file: `~/.config/mark-print/corporate.css`
 2. Configure in settings:
    ```json
    {
-     "markdown-pdf.styles": ["~/.config/markdown-pdf/corporate.css"],
-     "markdown-pdf.includeDefaultStyles": false
+     "mark-print.styles": ["~/.config/mark-print/corporate.css"],
+     "mark-print.includeDefaultStyles": false
    }
    ```
 3. Override styles for:
@@ -779,7 +779,7 @@ To run conversions outside VS Code:
    - `vscode.Uri` → Node.js `url` module
 3. **Expose CLI**:
    ```bash
-   markdown-pdf convert input.md --output output.pdf --config config.json
+   mark-print convert input.md --output output.pdf --config config.json
    ```
 4. **Handle Chromium**:
    - Use `puppeteer` instead of `puppeteer-core` (bundles Chromium)
@@ -805,7 +805,7 @@ To run conversions outside VS Code:
    class ChromiumNotFoundError extends Error {
      constructor() {
        super('Chromium not found');
-       this.recoveryAction = 'Run "Markdown PDF: Install Chromium" command';
+       this.recoveryAction = 'Run "MarkPrint: Install Chromium" command';
      }
    }
    ```
@@ -829,12 +829,12 @@ To run conversions outside VS Code:
 
 1. **Batch Conversion**:
    - Add command to convert entire folder of markdown files
-   - Configuration: `markdown-pdf.batchConvert.include` (glob patterns)
+   - Configuration: `mark-print.batchConvert.include` (glob patterns)
    - Use case: Documentation generation, e-book compilation
 
 2. **Output Format Templates**:
    - Support multiple HTML templates (academic, presentation, e-book)
-   - Configuration: `markdown-pdf.template` → path to custom template
+   - Configuration: `mark-print.template` → path to custom template
    - Include variables: `{author}`, `{date}`, `{version}` from front matter
 
 3. **Live Preview**:
@@ -844,13 +844,13 @@ To run conversions outside VS Code:
 
 4. **Custom Preprocessors**:
    - Allow shell commands to run before conversion
-   - Configuration: `markdown-pdf.preprocessor` → `"python preprocess.py {file}"`
+   - Configuration: `mark-print.preprocessor` → `"python preprocess.py {file}"`
    - Use case: Generate dynamic content, fetch data, run scripts
 
 5. **Export Profiles**:
    - Named configuration sets (e.g., "print", "web", "ebook")
    - Quick switching via Command Palette
-   - Configuration: `markdown-pdf.profiles.print = { ... }`
+   - Configuration: `mark-print.profiles.print = { ... }`
 
 ### Performance Optimizations
 
@@ -940,7 +940,7 @@ To run conversions outside VS Code:
 **Resources**:
 - `data/emoji.json` - Emoji definitions
 - `template/template.html` - HTML structure
-- `styles/markdown-pdf.css` - Default extension styles
+- `styles/mark-print.css` - Default extension styles
 - `styles/markdown.css` - Base markdown rendering
 - `styles/tomorrow.css` - Default syntax highlighting theme
 

@@ -236,7 +236,7 @@ title: My Document
 
 ### 4. Export
 
-- Command Palette → "Markdown PDF: Export (pdf)"
+- Command Palette → "MarkPrint: Export (pdf)"
 - Validation runs automatically
 - If valid, PDF generated
 - If invalid, Problems panel shows errors
@@ -257,7 +257,7 @@ title: My Document
 ## Notes
 
 - All code is modular and testable
-- Preserves existing markdown-pdf functionality
+- Preserves existing mark-print functionality
 - Backward compatible (legacy settings still work)
 - Self-contained in Node/JS (no external dependencies beyond npm packages)
 - Tests pass syntax validation (full test suite requires graphical VS Code)
