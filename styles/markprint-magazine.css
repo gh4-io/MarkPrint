@@ -1,0 +1,169 @@
+/* Pastel magazine-inspired theme for MarkPrint */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;500&display=swap');
+
+:root {
+  --mag-bg: #faf8ff;
+  --mag-surface: #ffffff;
+  --mag-muted: #6d6875;
+  --mag-primary: #8e7dff;
+  --mag-secondary: #ff89bb;
+  --mag-accent: #7bdff2;
+  --mag-highlight: #fcefee;
+  --mag-border: #e5d9f2;
+}
+
+html,
+body {
+  font-family: 'DM Sans', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.7;
+  background: var(--mag-bg);
+  color: var(--mag-muted);
+  padding: 2.5rem;
+}
+
+article {
+  max-width: 8.5in;
+  margin: 0 auto;
+  background: var(--mag-surface);
+  border-radius: 24px;
+  border: 1px solid var(--mag-border);
+  box-shadow: 0 20px 65px rgba(141, 132, 206, 0.15);
+  padding: 3rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Playfair Display', 'Times New Roman', serif;
+  color: #352d39;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  letter-spacing: 0.02em;
+}
+
+h1 {
+  font-size: 2.8rem;
+  color: var(--mag-primary);
+}
+
+h2 {
+  font-size: 2rem;
+  color: var(--mag-secondary);
+}
+
+p {
+  margin-bottom: 1.25rem;
+  font-size: 1.02rem;
+}
+
+code,
+pre {
+  font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  background: #2b2d42;
+  color: #fff;
+  border-radius: 18px;
+}
+
+pre {
+  padding: 1.25rem 1.5rem;
+  overflow-x: auto;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+code {
+  padding: 0.2rem 0.6rem;
+}
+
+blockquote {
+  border-radius: 30px;
+  background: var(--mag-highlight);
+  border: none;
+  padding: 1.5rem 2rem;
+  color: #4a3f55;
+  position: relative;
+  margin: 1.5rem 0;
+}
+
+blockquote::before {
+  content: '“';
+  font-size: 3rem;
+  color: var(--mag-secondary);
+  position: absolute;
+  top: -10px;
+  left: 25px;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+}
+
+table thead {
+  background: rgba(139, 92, 246, 0.15);
+}
+
+table th,
+table td {
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid var(--mag-border);
+}
+
+table tbody tr {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+table tbody tr:nth-child(even) {
+  background: rgba(235, 248, 255, 0.8);
+}
+
+.callout {
+  border-radius: 1.75rem;
+  border: 1px solid transparent;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(120deg, rgba(139, 92, 246, 0.1), rgba(255, 137, 187, 0.15));
+  color: #4f3c59;
+}
+
+.callout.warning {
+  background: linear-gradient(120deg, rgba(255, 190, 92, 0.2), rgba(255, 118, 118, 0.15));
+}
+
+.callout.danger {
+  background: linear-gradient(120deg, rgba(255, 118, 118, 0.25), rgba(255, 137, 187, 0.2));
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.metadata-field {
+  padding: 0.9rem 1.1rem;
+  border-radius: 1.5rem;
+  background: rgba(207, 217, 255, 0.35);
+  border: 1px solid rgba(142, 125, 255, 0.3);
+}
+
+.metadata-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mag-muted);
+  margin-bottom: 0.3rem;
+  display: block;
+}
+
+.metadata-value {
+  font-size: 1.1rem;
+  color: #352d39;
+  font-weight: 600;
+}

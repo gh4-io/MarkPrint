@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const vscode = require('vscode');
+const debugLogger = require('./debugLogger');
 
 /**
  * Template Registry
@@ -42,6 +43,11 @@ class TemplateRegistry {
           if (template) {
             template._source = 'bundled';
             this.templates.set(template.id, template);
+            debugLogger.log('template', 'Loaded bundled template', {
+              templateId: template.id,
+              file: templatePath,
+              resources: template.resources || {}
+            });
           }
         } catch (error) {
           console.error(`Failed to load bundled template ${file}:`, error);
@@ -75,6 +81,12 @@ class TemplateRegistry {
               template._source = 'workspace';
               template._workspaceFolder = folder.uri.fsPath;
               this.templates.set(template.id, template);
+              debugLogger.log('template', 'Loaded workspace template', {
+                templateId: template.id,
+                file: templatePath,
+                workspaceFolder: folder.uri.fsPath,
+                resources: template.resources || {}
+              });
             }
           } catch (error) {
             console.error(`Failed to load workspace template ${file}:`, error);
@@ -219,6 +231,7 @@ class TemplateRegistry {
     if (frontMatter && frontMatter.layout_template) {
       const template = this.getTemplate(frontMatter.layout_template);
       if (template) {
+        this.logTemplateSelection(document, template, 'frontMatter', { layout_template: frontMatter.layout_template });
         return template;
       }
     }
@@ -228,6 +241,7 @@ class TemplateRegistry {
     if (lastTemplateId) {
       const template = this.getTemplate(lastTemplateId);
       if (template) {
+        this.logTemplateSelection(document, template, 'workspaceState', { lastTemplateId });
         return template;
       }
     }
@@ -290,6 +304,11 @@ class TemplateRegistry {
       await this.insertTemplateMetadata(document, selected.template);
     }
 
+    this.logTemplateSelection(document, selected.template, 'quickPick', {
+      description: selected.template.description || '',
+      version: selected.template.version
+    });
+
     return selected.template;
   }
 
@@ -327,6 +346,24 @@ class TemplateRegistry {
   async reload() {
     this.templates.clear();
     await this.initialize();
+  }
+
+  logTemplateSelection(document, template, source, extra = {}) {
+    if (!template) {
+      return;
+    }
+
+    debugLogger.log('template', `Using template '${template.id}'`, {
+      document: document.uri.fsPath,
+      selectionSource: source,
+      templateId: template.id,
+      templateLabel: template.label,
+      templateVersion: template.version,
+      templateSource: template._source,
+      schema: template.schema || 'none',
+      resources: template.resources || {},
+      metadata: extra
+    });
   }
 }
 

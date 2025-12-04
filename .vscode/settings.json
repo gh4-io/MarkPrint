@@ -2,5 +2,10 @@
     "mark-print.outputDirectory": "sample",
     "mark-print.markdown-it-include.enable": false,
     "mark-print.executablePath": "C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe",
-    "debug.node.autoAttach": "on"
+    "mark-print.styles": [
+        "${workspaceFolder}/styles/markprint-magazine.css"
+    ],
+    "mark-print.stylesRelativePathFile": false,
+    "debug.node.autoAttach": "on",
+    "mark-print.debug": true
 }

@@ -26,6 +26,16 @@ function copyFile(src, dest) {
 }
 
 function main() {
+  const skipPrep =
+    process.env.MARKPRINT_SKIP_TEST_WORKSPACE_PREP === '1' ||
+    process.env.MARKPRINT_SKIP_TEST_WORKSPACE_PREP === 'true' ||
+    fs.existsSync(path.join(testWorkspace, '.manual'));
+
+  if (skipPrep) {
+    console.log('Skipping test workspace preparation (manual override detected).');
+    return;
+  }
+
   ensureDir(testWorkspace);
   copyFile(templateSrc, templateDest);
   copyFile(schemaSrc, schemaDest);

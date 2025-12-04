@@ -5,6 +5,7 @@ var fs = require('fs');
 var url = require('url');
 var os = require('os');
 var INSTALL_CHECK = false;
+const debugLogger = require('./src/debugLogger');
 
 // MarkPrint Phase 1: Template Foundations
 const TemplateRegistry = require('./src/templateRegistry');
@@ -809,18 +810,20 @@ function makeCss(filename) {
 
 function readStyles(uri) {
   try {
-    var includeDefaultStyles;
     var style = '';
     var styles = '';
     var filename = '';
     var i;
+    var appliedStyles = [];
 
-    includeDefaultStyles = vscode.workspace.getConfiguration('mark-print')['includeDefaultStyles'];
+    const includeDefaultInfo = debugLogger.describeSetting('mark-print', 'includeDefaultStyles');
+    const includeDefaultStyles = includeDefaultInfo.value;
 
     // 1. read the style of the vscode.
     if (includeDefaultStyles) {
       filename = path.join(__dirname, 'styles', 'markdown.css');
       style += makeCss(filename);
+      appliedStyles.push({ type: 'vscode.markdown.css', path: filename, source: includeDefaultInfo.source });
     }
 
     // 2. read the style of the markdown.styles setting.
@@ -830,21 +833,26 @@ function readStyles(uri) {
         for (i = 0; i < styles.length; i++) {
           var href = fixHref(uri, styles[i]);
           style += '<link rel=\"stylesheet\" href=\"' + href + '\" type=\"text/css\">';
+          appliedStyles.push({ type: 'markdown.styles', original: styles[i], resolved: href });
         }
       }
     }
 
     // 3. read the style of the highlight.js.
-    var highlightStyle = vscode.workspace.getConfiguration('mark-print')['highlightStyle'] || '';
-    var ishighlight = vscode.workspace.getConfiguration('mark-print')['highlight'];
+    var highlightSettingInfo = debugLogger.describeSetting('mark-print', 'highlight');
+    var highlightStyleSettingInfo = debugLogger.describeSetting('mark-print', 'highlightStyle');
+    var highlightStyle = highlightStyleSettingInfo.value || '';
+    var ishighlight = highlightSettingInfo.value;
     if (ishighlight) {
       if (highlightStyle) {
-        var css = vscode.workspace.getConfiguration('mark-print')['highlightStyle'] || 'github.css';
+        var css = highlightStyle;
         filename = path.join(__dirname, 'node_modules', 'highlight.js', 'styles', css);
         style += makeCss(filename);
+        appliedStyles.push({ type: 'highlight.js', path: filename, source: highlightStyleSettingInfo.source });
       } else {
         filename = path.join(__dirname, 'styles', 'tomorrow.css');
         style += makeCss(filename);
+        appliedStyles.push({ type: 'highlight.js', path: filename, source: 'default' });
       }
     }
 
@@ -852,6 +860,7 @@ function readStyles(uri) {
     if (includeDefaultStyles) {
       filename = path.join(__dirname, 'styles', 'mark-print.css');
       style += makeCss(filename);
+      appliedStyles.push({ type: 'markprint.default', path: filename, source: includeDefaultInfo.source });
     }
 
     // 5. read the style of the mark-print.styles settings.
@@ -860,8 +869,19 @@ function readStyles(uri) {
       for (i = 0; i < styles.length; i++) {
         var href = fixHref(uri, styles[i]);
         style += '<link rel=\"stylesheet\" href=\"' + href + '\" type=\"text/css\">';
+        appliedStyles.push({ type: 'markprint.styles', original: styles[i], resolved: href });
       }
     }
+
+    debugLogger.log('styles', 'Resolved stylesheet stack', {
+      document: uri ? uri.fsPath : 'unknown',
+      includeDefaultStyles: includeDefaultInfo,
+      markdownStyles: debugLogger.describeSetting('markdown', 'styles'),
+      highlight: highlightSettingInfo,
+      highlightStyle: highlightStyleSettingInfo,
+      markprintStyles: debugLogger.describeSetting('mark-print', 'styles'),
+      appliedStyles
+    });
 
     return style;
   } catch (error) {

@@ -5,6 +5,7 @@ const path = require('path');
 const vscode = require('vscode');
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
+const debugLogger = require('./debugLogger');
 
 const ALWAYS_SCALAR_FIELDS = new Set([
   'category',
@@ -59,26 +60,53 @@ class SchemaValidator {
     }
 
     // Load schema
-    const schema = await this.loadSchema(template.schema, template._workspaceFolder);
-    if (!schema) {
+    const schemaResult = await this.loadSchema(template.schema, template._workspaceFolder);
+    if (!schemaResult) {
       this.addError(document, 0, `Schema not found: ${template.schema}`);
       return false;
     }
 
+    const { schema, schemaPath } = schemaResult;
+    debugLogger.log('schema', 'Loaded schema', {
+      document: document.uri.fsPath,
+      templateId: template.id,
+      schemaReference: template.schema,
+      resolvedPath: schemaPath
+    });
+
     const relaxedSchema = this.relaxSchema(schema);
 
     // Normalize front matter before validation
-    frontMatter = this.normalizeFrontMatter(frontMatter, schema);
+    const normalization = this.normalizeFrontMatter(frontMatter, schema);
+    frontMatter = normalization.data;
+    if (normalization.changes.length > 0) {
+      debugLogger.log('schema', 'Front matter normalized', {
+        document: document.uri.fsPath,
+        templateId: template.id,
+        changes: normalization.changes
+      });
+    }
 
     // Validate
     const validate = this.ajv.compile(relaxedSchema);
     const valid = validate(frontMatter);
 
     if (!valid) {
+      debugLogger.log('schema', 'Schema validation failed', {
+        document: document.uri.fsPath,
+        templateId: template.id,
+        schemaPath,
+        errors: validate.errors
+      });
       this.reportValidationErrors(document, validate.errors);
       return false;
     }
 
+    debugLogger.log('schema', 'Schema validation passed', {
+      document: document.uri.fsPath,
+      templateId: template.id,
+      schemaPath
+    });
     return true;
   }
 
@@ -88,10 +116,11 @@ class SchemaValidator {
    */
   normalizeFrontMatter(data, schema) {
     if (!schema.properties) {
-      return data;
+      return { data, changes: [] };
     }
 
     const normalized = { ...data };
+    const changes = [];
 
     for (const [key, propSchema] of Object.entries(schema.properties)) {
       if (!(key in normalized)) {
@@ -99,49 +128,83 @@ class SchemaValidator {
       }
 
       const value = normalized[key];
+      const beforeValue = value;
+      let changeReason = null;
 
       if (value === null || value === undefined || value === '') {
         normalized[key] = null;
-        continue;
-      }
-
-      if (Array.isArray(value)) {
+        changeReason = 'cleared-empty-value';
+      } else if (Array.isArray(value)) {
         if (ALWAYS_SCALAR_FIELDS.has(key)) {
-          normalized[key] = this.normalizeScalarValue(key, value.length ? value[0] : null, propSchema);
+          const firstEntry = value.length ? value[0] : null;
+          const result = this.normalizeScalarValue(key, firstEntry, propSchema);
+          normalized[key] = result.value;
+          changeReason = 'scalar-from-array';
+          if (result.reason) {
+            changeReason += `:${result.reason}`;
+          }
         } else {
-          normalized[key] = value.map(entry => this.normalizeScalarValue(key, entry, propSchema));
+          normalized[key] = value.map(entry => this.normalizeScalarValue(key, entry, propSchema).value);
+          changeReason = 'normalized-array-items';
         }
-        continue;
+      } else {
+        const result = this.normalizeScalarValue(key, value, propSchema);
+        normalized[key] = result.value;
+        changeReason = result.reason;
       }
 
-      normalized[key] = this.normalizeScalarValue(key, value, propSchema);
+      const changed = !this.areValuesEquivalent(beforeValue, normalized[key]);
+      if (changed || (changeReason && changeReason !== 'no-change')) {
+        changes.push({
+          key,
+          originalType: this.describeValueType(beforeValue),
+          newType: this.describeValueType(normalized[key]),
+          reason: changeReason || 'transformed'
+        });
+      }
     }
 
-    return normalized;
+    return { data: normalized, changes };
   }
 
   normalizeScalarValue(key, value, propSchema) {
     if (value === null || value === undefined || value === '') {
-      return null;
+      return { value: null, reason: 'empty-scalar' };
     }
 
     if (key === 'revision') {
-      return this.normalizeRevision(value);
+      const revisionValue = this.normalizeRevision(value);
+      return {
+        value: revisionValue,
+        reason: revisionValue !== value ? 'revision-normalized' : null
+      };
     }
 
     if (propSchema.enum) {
-      return this.normalizeEnumValue(value, propSchema.enum);
+      const enumValue = this.normalizeEnumValue(value, propSchema.enum);
+      return {
+        value: enumValue,
+        reason: enumValue !== value ? 'enum-normalized' : null
+      };
     }
 
     if (propSchema.format === 'date') {
-      return this.normalizeDate(value);
+      const dateValue = this.normalizeDate(value);
+      return {
+        value: dateValue,
+        reason: dateValue !== value ? 'date-normalized' : null
+      };
     }
 
     if (typeof value === 'number' || typeof value === 'boolean') {
-      return value;
+      return { value, reason: null };
     }
 
-    return this.toStringValue(value);
+    const stringValue = this.toStringValue(value);
+    return {
+      value: stringValue,
+      reason: stringValue !== value ? 'coerced-to-string' : null
+    };
   }
 
   /**
@@ -224,7 +287,7 @@ class SchemaValidator {
       }
 
       const content = fs.readFileSync(fullPath, 'utf-8');
-      return JSON.parse(content);
+      return { schema: JSON.parse(content), schemaPath: fullPath };
     } catch (error) {
       console.error('Failed to load schema:', error);
       return null;
@@ -412,6 +475,24 @@ class SchemaValidator {
 
   cloneSchema(value) {
     return value ? JSON.parse(JSON.stringify(value)) : value;
+  }
+
+  describeValueType(value) {
+    if (Array.isArray(value)) {
+      return 'array';
+    }
+    if (value === null) {
+      return 'null';
+    }
+    return typeof value;
+  }
+
+  areValuesEquivalent(a, b) {
+    try {
+      return JSON.stringify(a) === JSON.stringify(b);
+    } catch (error) {
+      return a === b;
+    }
   }
 
   /**
