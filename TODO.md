@@ -1,12 +1,35 @@
 ## TODO
 
-### CSS Injection Order Review
-- The HTML/PDF renderer still injects styles in multiple passes (`styles/markdown.css`, `markdown.styles`, highlight theme, `styles/mark-print.css`, then entries from `markprint.styles`). Even with `markprint.styles` defined, earlier files can override rules if they share selectors or load later in the stack.
-- Inspect `readStyles()` in `extension.js` (around lines 810-880). Confirm the exact order in which stylesheets are concatenated and how `markprint.includeDefaultStyles`, `markdown.styles`, `markprint.styles`, and default files interact.
-- Decide whether `styles/mark-print.css` should remain in the pipeline when custom styles are provided. If not, gate it behind a setting or ensure custom files always load last.
-- Consider adding specificity (e.g., `article blockquote`) or `!important` in `markprint-magazine.css` if load order alone isn't sufficient.
-- Document the expected behavior for users so they know how to ensure their custom styles override the defaults.
+### Models
+- Create a Dev version that contains full debug and trace capabilities
+- Create a Prod version that is light weight.
 
+### CSS Flow Setting change
+- need to change the css flow
+  - setting should be dropdown menu for pre-installed defaults (default, dark, tomorrow,markprint, etc)
+  - setting should also have a toggle to enable file override, if true file will always override.
 
-### Path Review
-- all file paths need to be reviewed. for each file path described, evaluate if absolut or relitive or both would be appropriate. then logic will have to be made to accomadate in all events.
+[markdown document] 
+   │
+   ▼
+extension.js: makeHtml() – orchestrator that builds the HTML template.
+   │        It asks readStyles() for CSS, sets title/content/mermaid script,
+   │        and renders template/template.html with Mustache.
+   │
+   ▼
+extension.js: readStyles(uri)
+   │
+   ├─(A) Built-in defaults (always inline via makeCss):
+   │     • styles/markdown.css – Microsoft’s base Markdown preview theme (fonts,
+   │       layout primitives, blockquote baseline)
+   │     • node_modules/highlight.js styles – syntax highlighting palette
+   │     • styles/markprint.css – legacy MarkPrint tweaks (pre formatting, blockquotes, etc.)
+   │
+   ├─(B) VS Code markdown.styles (if markprint.includeDefaultStyles=true)
+   │     • Each entry is resolved with resolveSettingPath() and fixHref()
+   │     • Injected as `<link rel="stylesheet" ...>` so VS Code preview styles can piggyback
+   │
+   └─(C) markprint.styles (your custom stack)
+         • `${workspaceFolder}/styles/markprint-magazine.css` now expands to the real
+           path under the active workspace, so the browser can fetch it
+         • Still linked rather than inlined, so the original file stays separate

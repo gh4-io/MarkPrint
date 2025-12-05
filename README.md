@@ -11,8 +11,11 @@ This extension converts Markdown files to pdf, html, png or jpeg files.
 - [Features](#features)
 - [Install](#install)
 - [Usage](#usage)
+- [Pipeline Profiles & Layouts](#pipeline-profiles--layouts)
 - [Extension Settings](#extension-settings)
 - [Options](#options)
+- [Testing](#testing)
+- [Migration Guide](#migration-guide)
 - [FAQ](#faq)
 - [Known Issues](#known-issues)
 - [Release Notes](#release-notes)
@@ -175,6 +178,39 @@ If the download is not successful or you want to avoid downloading every time yo
 1. Open the Markdown file
 1. Auto convert on save
 
+## Pipeline Profiles & Layouts
+
+MarkPrint ships with bundled **pipeline profiles** (`templates/*.json`) that describe profile metadata, renderer preferences, and layout descriptors. Each profile now points to a layout artifact stored under `templates/layouts/`, with **XML/DocBook layouts serving as the canonical authoring format**. JSON, CSS, Scribus `.sla`, or Pandoc-derived assets remain supported for legacy data but are converted into XML before rendering. The extension loads these artifacts at runtime so SLA/XML conversions happen inside the export pipeline—no manual pre-processing.
+
+### Front matter keys
+
+- `pipeline_profile` (canonical) selects the profile. Example:
+
+  ```yaml
+  ---
+  title: Example SOP
+  pipeline_profile: dts-master-report
+  layout_template: dts-master-report # optional legacy alias
+  document_id: SOP-200
+  revision: 1.0
+  ---
+  ```
+
+- `layout_template` remains as a backward-compatible alias. When we insert metadata for you, both keys are written so older docs keep working.
+
+### Layout descriptors & renderer hints
+
+- JSON/CSS layouts: the loader simply reads the referenced `.layout.json`/`.css` file.
+- Scribus `.sla`: we parse frame geometry directly and expose a neutral frame model while logging that the profile prefers a Scribus renderer.
+- DocBook/Pandoc: descriptor metadata (stylesheet, filters, namespaces) is cached so we can attach proper converters in future phases.
+
+Each layout descriptor can set `rendererHint`. Chromium remains the only active renderer today, but if a profile requests another engine we log the hint so Phase 2 can route work to Scribus/WeasyPrint/Playwright later.
+
+### Defaults & fallbacks
+
+- `markprint.defaultTemplate` now refers to the default pipeline profile ID.
+- If neither `pipeline_profile` nor `layout_template` is provided, MarkPrint prompts (per `markprint.templateFallbackMode`) before falling back to the configured default profile.
+
 ## Extension Settings
 
 [Visual Studio Code User and Workspace Settings](https://code.visualstudio.com/docs/customization/userandworkspace)
@@ -251,6 +287,7 @@ If the download is not successful or you want to avoid downloading every time yo
   - Enable Auto convert on save
   - boolean. Default: false
   - To apply the settings, you need to restart Visual Studio Code
+  - **Deprecated**: Switch to `markprint.buildMode = "auto"` (same behavior) or `"hybrid"`; keeping this flag set now surfaces a warning.
 
 #### `markprint.convertOnSaveExclude`
   - Excluded file name of convertOnSave option
@@ -283,6 +320,7 @@ If the download is not successful or you want to avoid downloading every time yo
 "markprint.outputDirectory": "output",
 ```
 
+  - Leaving the option empty writes exports next to the Markdown file so you do not need a staging folder for local runs.
   - Relative path (home directory)
     - If path starts with  `~`, it will be interpreted as a relative path from the home directory
 
@@ -302,8 +340,10 @@ If the download is not successful or you want to avoid downloading every time yo
 
 #### `markprint.styles`
   - A list of local paths to the stylesheets to use from the markprint
+  - Leaving the array empty falls back to the bundled CSS under `${extensionPath}/styles`.
   - If the file does not exist, it will be skipped
   - All `\` need to be written as `\\` (Windows)
+  - Resolver order: Markdown document folder -> workspace folder -> extension install. Missing files throw `Stylesheet not found...` so you can see each attempted path.
 
 ```javascript
 "markprint.styles": [
@@ -560,6 +600,25 @@ If the download is not successful or you want to avoid downloading every time yo
 #### `markprint.mermaidServer`
   - mermaid server
   - Default: https://unpkg.com/mermaid/dist/mermaid.min.js
+
+## Testing
+
+Run the bundled suite with `npm test`. If VS Code's integration-test binary is missing, run `npm run test:download-vscode` first (this wraps `npx @vscode/test-electron --version 1.106.3 --download`). The `pretest` hook seeds `test/.test-workspace` with the latest templates, schemas, and SOP fixtures so layout conversions happen inside the sandbox. The suite now ensures:
+
+- `pipeline_profile` is honored before `layout_template`, with `markprint.defaultTemplate` used as a fallback.
+- Layout descriptors for JSON and Scribus `.sla` artifacts resolve through the new loader.
+- Renderer hints are logged so non-Chromium requests are visible for future multi-engine work.
+
+See [TEST.md](TEST.md) for platform notes (VS Code download cache, headless Linux tips with `xvfb-run`, etc.).
+
+## Migration Guide
+
+Moving from Phase 1 templates to pipeline profiles requires two steps:
+
+1. Add `pipeline_profile` to your front matter (keep `layout_template` only for legacy docs).
+2. Update custom templates to the new manifest schema (`profile`, `layout`, `resources`, `artifactMappings`). Use the bundled Standard Letter/DTS manifests as references.
+
+The detailed checklist lives in [MIGRATION.md](MIGRATION.md), including troubleshooting tips for schema validation and renderer hints.
 
 <div class="page"/>
 

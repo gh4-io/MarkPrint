@@ -10,7 +10,7 @@ status: Draft
 - **Mission**: Deliver a self-contained VS Code extension capable of parsing Markdown with template-aware metadata, applying bespoke layout rules (fonts, paper size, XML/HTML directives, image policies), and producing print-ready + digital outputs.
 - **Non-negotiables**:
   1. **Self-contained runtime** – no external Python/Pandoc/WeasyPrint installs; everything must ship as Node/JS dependencies.
-  2. **Metadata-driven template selection** – `layout_template` front-matter (or equivalent) dictates rendering instructions; UI prompt only when metadata omits a template.
+  2. **Metadata-driven template selection** - `pipeline_profile` front-matter (with `layout_template` as a compatibility alias) dictates rendering instructions; UI prompt only when metadata omits a profile.
   3. **Configurable build modes** – expose settings to keep convert-on-save, manual build, or hybrid preview. Users choose per workspace/profile.
   4. **Manual release command** – releases triggered via dedicated VS Code command; templates may optionally mark themselves auto-release capable but default remains manual.
 
@@ -19,7 +19,7 @@ status: Draft
 ```
 Markdown + YAML Front Matter
         ↓ (gray-matter + ajv validation)
-Template Resolver (layout_template registry)
+Template Resolver (pipeline profile registry + layout loader)
         ↓
 Rendering Orchestrator
   • Markdown parser (markdown-it + plugins)
@@ -36,7 +36,7 @@ Release Command (explicit invocation)
 | Component | Responsibility | Notes |
 |-----------|----------------|-------|
 | Template Registry | Load template manifests (JSON/YAML) defining layout directives, fonts, paper size, iconography, release rules. | Stored in workspace folder (`.markprint/templates/<name>.json`) with fallback defaults packaged inside extension. |
-| Metadata Validator | `ajv` schema loader keyed by template name. Ensures required metadata (e.g., `doc_id`, `layout_template`, `paper_size`) before render. | Error UI should prompt to edit metadata or pick template. |
+| Metadata Validator | `ajv` schema loader keyed by pipeline profile. Ensures required metadata (e.g., `doc_id`, `pipeline_profile`, `paper_size`) before render. | Error UI should prompt to edit metadata or pick a profile. |
 | Rendering Orchestrator | Wraps markdown-it (with custom plugins for callouts, directives, PlantUML/Mermaid). Applies layout instructions (extra CSS, XML snippets, mapping directives). | Consider modularizing `extension.js` into parser/template/export modules for maintainability. |
 | Output Drivers | Provide multiple renderers: HTML (existing Mustache path), PDF (Chromium or alternatives), image export. Each driver reads template “quality” directives (DPI, bleed, crop marks). | Selection per template (e.g., `renderer: "playwright"`). |
 | Release Command | VS Code command `markprint.release` packaging outputs + metadata into archive when allowed. Uses template flags for automation rules (e.g., `allowRelease: true`). | Manual by default; use a bundled archiver lib (e.g., `archiver` or `yazl`) to avoid external tooling. |
@@ -55,7 +55,7 @@ Release Command (explicit invocation)
 ```
 
 # 3. Criteria & Evaluation Checklist
-1. **Template Compliance** – Does the active document declare `layout_template`? If not, prompt user and optionally write back to metadata.
+1. **Template Compliance** - Does the active document declare `pipeline_profile`? If not, prompt user and optionally write back to metadata (also adding `layout_template` for legacy docs).
 2. **Validation Coverage** – Each template must specify schema path + validation severity. Build should stop on schema errors unless template marks warning-only.
 3. **Asset Fidelity** – Fonts/images referenced by template have checksum validation and fallback rules.
 4. **Renderer Selection** – Template dictates renderer choice; system must gracefully fall back when renderer unavailable.
@@ -96,7 +96,7 @@ Release Command (explicit invocation)
 
 | Branch Name | Purpose | Notes |
 |-------------|---------|-------|
-| `template-registry` | Implement core template manifest loader, metadata validation, and UI prompts for missing `layout_template`. | Smallest iteration; keeps existing Chromium renderer. |
+| `template-registry` | Implement core pipeline profile manifest loader, metadata validation, and UI prompts for missing `pipeline_profile`. | Smallest iteration; keeps existing Chromium renderer. |
 | `build-mode-settings` | Wire configurable build modes (manual/auto/hybrid) into command handlers and settings UI. | Depends on template registry branch; ensures UX alignment. |
 | `renderer-abstraction` | Refactor `extension.js` into parser/template/export modules and introduce renderer interface to swap out Chromium easily. | Enables subsequent experimentation with Playwright/Vivliostyle. |
 | `playwright-driver` | Integrate Playwright-based PDF export for multi-engine support; add template flag to select renderer. | Requires new npm deps and additional download size considerations. |
@@ -114,6 +114,7 @@ Delivering everything at once would bundle metadata validation, template UX, ren
 1. **Phase 1 – Template Foundations** (`template-registry` + `build-mode-settings`)  
    - Goal: prove the metadata-driven workflow works end-to-end within current renderer.  
    - Acceptance: documents failing validation block builds; missing template triggers prompt; build modes (manual/auto/hybrid) behave per settings.  
+   - Status (Dec 5): Complete – template registry, layout loader, schema validator, and renderer logging ship in `extension.js`, with docs/tests in place for the Phase 1 handoff.  
    - Suggestion: keep CLI/test harness minimal so Claude Code can iterate quickly.
 2. **Phase 2 – Renderer Abstraction** (`renderer-abstraction`)  
    - Goal: split `extension.js` into parser/template/export modules with a renderer interface.  

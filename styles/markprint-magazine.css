@@ -45,18 +45,18 @@ h6 {
 }
 
 h1 {
-  font-size: 2.8rem;
+  font-size: 1.8rem;
   color: var(--mag-primary);
 }
 
 h2 {
-  font-size: 2rem;
+  font-size: 1.5rem;
   color: var(--mag-secondary);
 }
 
 p {
   margin-bottom: 1.25rem;
-  font-size: 1.02rem;
+  font-size: 0.8rem;
 }
 
 code,
@@ -78,7 +78,7 @@ code {
 }
 
 blockquote {
-  border-radius: 00px;
+  border-radius: 12px;
   background: var(--mag-highlight);
   border: none;
   padding: 1.5rem 2rem;

@@ -1,0 +1,79 @@
+{
+  "margins": {
+    "top": "0.75in",
+    "right": "0.5in",
+    "bottom": "0.75in",
+    "left": "0.5in"
+  },
+  "frames": {
+    "title": {
+      "x": "3.456in",
+      "y": "0.778in",
+      "width": "4.600in",
+      "height": "0.872in",
+      "font": "Trebuchet MS Regular",
+      "fontSize": 22
+    },
+    "body": {
+      "x": "1.889in",
+      "y": "2.392in",
+      "width": "7.472in",
+      "height": "7.892in"
+    },
+    "metadata": {
+      "status": {
+        "x": "8.147in",
+        "y": "10.428in",
+        "width": "1.150in",
+        "height": "0.183in"
+      },
+      "department": {
+        "x": "1.889in",
+        "y": "1.692in",
+        "width": "2.512in",
+        "height": "0.329in"
+      },
+      "owner": {
+        "x": "4.400in",
+        "y": "1.692in",
+        "width": "2.460in",
+        "height": "0.329in"
+      },
+      "approver": {
+        "x": "6.877in",
+        "y": "1.692in",
+        "width": "2.460in",
+        "height": "0.329in"
+      },
+      "amos_version": {
+        "x": "1.889in",
+        "y": "2.042in",
+        "width": "1.623in",
+        "height": "0.329in"
+      },
+      "apn": {
+        "x": "3.512in",
+        "y": "2.042in",
+        "width": "1.950in",
+        "height": "0.329in"
+      },
+      "upstream_apn": {
+        "x": "5.461in",
+        "y": "2.042in",
+        "width": "1.950in",
+        "height": "0.329in"
+      },
+      "downstream_apn": {
+        "x": "7.411in",
+        "y": "2.042in",
+        "width": "1.950in",
+        "height": "0.329in"
+      }
+    }
+  },
+  "colorPalette": {
+    "primary": "#0b2447",
+    "secondary": "#19376d",
+    "accent": "#576cbc"
+  }
+}

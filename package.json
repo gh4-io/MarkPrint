@@ -208,6 +208,21 @@
           "default": true,
           "description": "Enable the inclusion of default Markdown styles (VSCode, markprint)"
         },
+        "markprint.defaultTemplate": {
+          "type": "string",
+          "default": "standard-letter",
+          "description": "Template ID or path to use when a document does not specify layout_template"
+        },
+        "markprint.templateFallbackMode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "prompt",
+            "disabled"
+          ],
+          "default": "prompt",
+          "description": "Behavior when layout_template is missing or invalid: auto silently uses the default template, prompt asks for confirmation, disabled blocks export"
+        },
         "markprint.highlight": {
           "type": "boolean",
           "default": true,
@@ -513,7 +528,8 @@
   "scripts": {
     "pretest": "node ./.plan/tools/prepare-test-workspace.js",
     "vscode:prepublish": "node ./src/compile",
-    "test": "node ./test/runTest.js"
+    "test": "node ./test/runTest.js",
+    "test:download-vscode": "npx @vscode/test-electron@2.3.9 --version 1.106.3 --download"
   },
   "devDependencies": {
     "glob": "^7.1.6",
@@ -524,7 +540,7 @@
   "dependencies": {
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
-    "cheerio": "^0.20.0",
+    "cheerio": "^1.1.0",
     "emoji-images": "^0.1.1",
     "gray-matter": "^4.0.2",
     "highlight.js": "^9.18.1",

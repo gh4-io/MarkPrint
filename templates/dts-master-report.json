@@ -1,0 +1,76 @@
+{
+  "$schema": ".markprint/schemas/pipeline-profile.schema.json",
+  "extends": "standard-letter",
+  "profile": {
+    "id": "dts-master-report",
+    "label": "DTS Master Report",
+    "version": "1.0.0",
+    "description": "Recreated from DTS_Master_Report_Template.sla for the MarkPrint pipeline",
+    "category": "SOP",
+    "schema": ".markprint/schemas/dts-master-report.schema.json",
+    "renderer": {
+      "engine": "chromium",
+      "options": {}
+    },
+    "outputs": {
+      "pdf": {
+        "filename_pattern": "{document_id}_r{revision}_DTS.pdf",
+        "target_directory": "published/pdf"
+      },
+      "html": {
+        "filename_pattern": "{document_id}_r{revision}_DTS.html",
+        "target_directory": "published/web"
+      }
+    },
+    "buildMode": "manual"
+  },
+  "layout": {
+    "type": "sla",
+    "source": "${extensionPath}/.plan/ref/DTS_Master_Report_Template.sla",
+    "rendererHint": "scribus",
+    "converter": {
+      "type": "frameMap",
+      "target": "chromium"
+    }
+  },
+  "resources": {
+    "css": [
+      "${extensionPath}/styles/dts-master-report.css"
+    ],
+    "fonts": [
+      {
+        "family": "Trebuchet MS",
+        "style": "Regular",
+        "weight": 400
+      },
+      {
+        "family": "Arial",
+        "style": "Regular",
+        "weight": 400
+      }
+    ],
+    "assets": []
+  },
+  "artifactMappings": {
+    "scribus": {
+      "frames": "${extensionPath}/templates/layouts/dts-master-report.layout.json",
+      "masters": {
+        "first_page": "MP_FIRST",
+        "continuation_pages": "MP_CONT"
+      }
+    },
+    "docbook": {
+      "styles": {
+        "heading": {
+          "1": "Heading1",
+          "2": "Heading2",
+          "3": "Heading3",
+          "4": "Heading4",
+          "5": "Heading5",
+          "6": "Heading6"
+        },
+        "paragraph": "BodyText"
+      }
+    }
+  }
+}

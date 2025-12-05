@@ -463,6 +463,38 @@ Create `.github/workflows/test.yml` per TEST.md example (lines 317-349):
 - Tests on Node 18
 - Uses xvfb-run for headless execution
 - Uploads coverage reports
+
+---
+
+## Multi-Engine Template Roadmap (New)
+
+The next wave of work restructures templates into true **pipeline profiles** that can reference multiple layout artifact types (CSS bundles, Scribus `.sla`, XML/DocBook/Pandoc sources) while keeping SLA/XML conversion inside the export engine.
+
+**Guiding principles**
+
+1. `pipeline_profile` becomes the canonical front‑matter key; `layout_template` remains as a backward-compatible alias.
+2. Templates reference a layout resource (ID or path) plus renderer hints; the engine loads SLA/XML on demand, converts them to our neutral frame model, and only then renders via Chromium. Future phases will let profiles opt into other renderers (Scribus/WeasyPrint/Pandoc pipelines).
+3. Artifact types to support in this pass: CSS, JSON layout manifests, Scribus `.sla`, XML/DocBook, and Pandoc-compatible layouts.
+
+**Immediate deliverables**
+
+- Inventory current template fields vs. the original `layout_profile_dts_master_report.json`.
+- Design a manifest structure that nests:
+  - `profile` metadata (id/label/version/category, schema, outputs)
+  - `layout` reference (type, source path/ID, renderer hints)
+  - `resources` (CSS bundles, fonts, assets, optional converters)
+  - `artifactMappings` for DocBook/Pandoc/XML imports.
+- Document the engine changes required to load and convert SLA/XML at runtime without pre-processing steps.
+
+**Status (Dec 4)**  
+- ✅ Bundled manifests follow the new `profile/layout/resources/artifactMappings` schema with layout descriptors in `templates/layouts`.
+- ✅ `.markprint/schemas/pipeline-profile.schema.json` plus updated document schemas enforce `pipeline_profile` as the canonical key.
+- ✅ `src/layoutLoader.js` parses JSON and Scribus `.sla` artifacts; TemplateRegistry now resolves renderer hints and stores layout artifacts.
+- ✅ README, MIGRATION.md, TEST.md, and the proposal were updated to call out pipeline profiles, runtime conversion, and the renderer abstraction plan.
+
+**Future note**
+
+- Once the architecture supports multiple renderers, revisit the pipeline to allow Scribus/WeasyPrint execution when a profile so requests. Keep this on the backlog; today we only implement the abstraction hooks.
 </work_remaining>
 
 <attempted_approaches>
@@ -744,6 +776,11 @@ None currently in place. All changes are permanent architecture updates.
 - No tests have successfully run yet with new configuration
 </current_state>
 
+## Phase 1 Complete (Dec 5, 2025)
+- **Architecture snapshot**: Template Registry + Schema Validator gate every export, layout artifacts load via `LayoutLoader` (JSON + Scribus SLA) before the Chromium-only renderer runs, and the status bar surfaces build mode + selected profile.
+- **Known limitations**: Only Chromium executes the pipeline (renderer hints simply log), SLA frames are parsed but not rendered into PDFs yet, and build outputs still rely on the global output directory instead of per-profile destinations.
+- **Ready for Phase 2**: Next steps are carving the renderer boundary out of `extension.js`, introducing a Chromium driver module so alternate engines can plug in, and wiring `profile.outputs` plus SLA playback into whichever renderer executes the document.
+
 <context_update timestamp="2025-12-04T09:40-0500">
 ## Automated Test Workspace Preparation
 - Added `.plan/tools/prepare-test-workspace.js` to copy `templates/standard-letter.json`, `.markprint/schemas/standard-letter.schema.json`, and `.plan/ref/SOP-200_Create_Workackage_Sequencing_Type.md` into `test/.test-workspace/.markprint/{templates,schemas}` plus the SOP markdown before each debug/test run.
@@ -761,3 +798,37 @@ None currently in place. All changes are permanent architecture updates.
 - Make sure `styles/markprint.css` exists (or disable `markprint.includeDefaultStyles`) to avoid ENOENT during export. Keep custom themes last in `markprint.styles` for consistent overrides.
 - Resource-scoped configuration warnings persist where `vscode.workspace.getConfiguration('markprint')` lacks a document URI; revisit those calls if the logs get noisy.
 </context_update>
+
+<context_update timestamp="2025-12-04T23:25-0500">
+## Pipeline Profile Handover
+- Authored `docs/pipeline-profile-manifest-spec.md` to capture the full Phase 2 contract: profile metadata vs. layout descriptors, renderer hints, resources, and artifact mappings (Scribus + DocBook). This doc mirrors the legacy Layout Profile spec structure so governance teams can review apples-to-apples.
+- Bundled manifests (`templates/standard-letter.json`, `templates/dts-master-report.json`) already follow the described schema, and layout artifacts live under `templates/layouts/…` (JSON + `.sla`). Reference these when validating future customer variants.
+- Outstanding verification: `README.md` and `MIGRATION.md` link to the new spec, but no walkthrough video/screenshots yet. Consider adding an ADR or Loom recap for stakeholders before merging to `main`.
+- Testing remains blocked until VS Code’s test binary launches successfully (see earlier Immediate Next Action). After the test harness is healthy, re-run `npm test` to confirm the layout loader + renderer logging suites pass end-to-end.
+- Next implementer should (1) socialize the spec with Publishing/Docs leads, (2) wire any automation that auto-publishes specs under `/docs`, and (3) resume multi-engine work using the renderer hints logged in `extension.js`.
+</context_update>
+
+<handoff timestamp="2025-12-05T15:25-0500">
+## Summary
+- Dependency cleanup finished: upgraded `cheerio` to `^1.1.0`, ran `npm install`, and `npm ls` now passes without the punycode warning.
+- Renderer plumbing tightened: `markprint()` now routes through a `renderWithChromium()` helper, auto-save uses `markprint()` again, and deprecated `markprint.convertOnSave` emits warnings when set.
+- Stylesheet resolution centralized in `src/stylesheetResolver.js`; `test/suite/template.test.js` gained document/workspace/extension fallback coverage and missing-file assertions.
+- Documentation refreshed: README/TEST/MIGRATION describe the new defaults (empty `markprint.outputDirectory` outputs next to the Markdown file, bundled styles load when `markprint.styles` is empty, `npm run test:download-vscode` for harness download), and `docs/pipeline-profile-manifest-spec.md` now states `profile.outputs` is informational until Phase 2.
+- Planning artifacts updated with a Dec 5 Phase 1 completion note in this file and a status blurb in `.plan/MarkPrint-impromptu-proposal.md`.
+
+## Outstanding Risks / TODO
+- Automated tests remain blocked: VS Code’s test binary still needs to be downloaded (`npm run test:download-vscode`) and WSL must install the Chromium shared libraries listed earlier (`libnss3`, `libnspr4`, etc.) before `npm test` can run.
+- Manual export not revalidated post-refactor; once dependencies are in place, run `extension.markprint.pdf` against `test/suite/SOP-200_Create_Workpackage_Sequencing_Type.md` to confirm `renderWithChromium()` honors the stylesheet/output directory logic.
+- Renderer abstraction is incomplete: Chromium logic is clustered but still inline. Phase 2 must extract a driver module and honor `profile.outputs`.
+- README still documents the legacy convert-on-save workflow (now marked deprecated). Confirm downstream docs/portals echo the warning so users aren’t surprised by the new popup.
+
+## Validation
+- `npm install` succeeded (only upstream deprecation notices from `mkdirp`/`flat` were logged). `npm ls` output is clean.
+- No automated tests executed this round due to the missing VS Code binary/WSL libs. Manual validation pending.
+
+## Next Owner Checklist
+1. Install the WSL dependencies from the “Immediate Next Action” block and run `npm run test:download-vscode && npm test` to exercise the new stylesheet resolver suite.
+2. Trigger a manual export in the Extension Development Host to verify the Chromium pipeline still works with default/empty settings.
+3. Once tests pass, consider bumping `package.json` to `2.0.0` and drafting a CHANGELOG entry for the Phase 1 completion.
+4. Begin the renderer abstraction work from `multi-engine-phase2.md` (split Chromium driver, honor `profile.outputs`) after Phase 1 verification is signed off.
+</handoff>

@@ -4,11 +4,16 @@
   "title": "Standard Letter Metadata",
   "description": "Metadata schema for standard letter documents",
   "type": "object",
-  "required": ["layout_template", "title", "document_id", "revision"],
+  "required": ["pipeline_profile", "title", "document_id", "revision"],
   "properties": {
+    "pipeline_profile": {
+      "type": "string",
+      "description": "Pipeline profile identifier that selects the Standard Letter manifest.",
+      "const": "standard-letter"
+    },
     "layout_template": {
       "type": "string",
-      "description": "Template ID to use for rendering",
+      "description": "Legacy alias for pipeline_profile. Maintained for backward compatibility.",
       "const": "standard-letter"
     },
     "title": {

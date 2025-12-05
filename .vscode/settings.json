@@ -1,10 +1,7 @@
 {
-    "markprint.outputDirectory": "sample",
+    "markprint.outputDirectory": "",
     "markprint.markdown-it-include.enable": false,
-    "markprint.executablePath": "C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe",
-    "markprint.styles": [
-        "${workspaceFolder}/styles/markprint-magazine.css"
-    ],
+    "markprint.styles": [],
     "markprint.stylesRelativePathFile": false,
     "markprint.debug": true
 }

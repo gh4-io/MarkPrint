@@ -1,0 +1,189 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://markprint.io/schemas/pipeline-profile.schema.json",
+  "title": "MarkPrint Pipeline Profile Manifest",
+  "description": "Defines a pipeline profile that references layout artifacts, resources, and renderer hints.",
+  "type": "object",
+  "required": ["profile", "layout"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional self-describing schema reference."
+    },
+    "extends": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional parent profile id to inherit from."
+    },
+    "profile": {
+      "type": "object",
+      "required": ["id", "label", "version", "schema"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique pipeline profile identifier."
+        },
+        "label": {
+          "type": "string",
+          "description": "Human readable name."
+        },
+        "version": {
+          "type": "string",
+          "description": "Semantic version string."
+        },
+        "description": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "description": "Logical grouping or document family."
+        },
+        "schema": {
+          "type": "string",
+          "description": "Relative path to the metadata schema for this profile."
+        },
+        "renderer": {
+          "type": "object",
+          "required": ["engine"],
+          "properties": {
+            "engine": {
+              "type": "string",
+              "description": "Requested rendering engine (chromium, scribus, weasyprint, etc.)."
+            },
+            "options": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "Engine specific options."
+            }
+          },
+          "additionalProperties": false
+        },
+        "outputs": {
+          "type": "object",
+          "description": "Output definitions that describe filenames, directories, and enablement."
+        },
+        "buildMode": {
+          "type": "string",
+          "description": "Default build mode (auto, manual, hybrid)."
+        },
+        "logging": {
+          "type": "object",
+          "description": "Optional logging configuration."
+        }
+      },
+      "additionalProperties": true
+    },
+    "layout": {
+      "type": "object",
+      "description": "Descriptor for the layout artifact backing this profile.",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "css",
+            "json",
+            "sla",
+            "xml",
+            "docbook",
+            "pandoc",
+            "inline"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "description": "Path or URI to the artifact. Supports ${extensionPath} and ${workspaceFolder} tokens."
+        },
+        "rendererHint": {
+          "type": "string",
+          "description": "Preferred rendering engine for this layout."
+        },
+        "converter": {
+          "type": "object",
+          "description": "Hints used to convert the artifact to the neutral frame model."
+        },
+        "inline": {
+          "description": "Inline layout data for JSON layouts."
+        }
+      },
+      "anyOf": [
+        {
+          "required": ["source"]
+        },
+        {
+          "required": ["inline"]
+        }
+      ],
+      "additionalProperties": true
+    },
+    "resources": {
+      "type": "object",
+      "description": "External resources loaded alongside the layout (CSS bundles, fonts, assets).",
+      "properties": {
+        "css": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fonts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "family": { "type": "string" },
+              "style": { "type": "string" },
+              "weight": { "type": "integer" }
+            },
+            "required": ["family"]
+          }
+        },
+        "assets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "artifactMappings": {
+      "type": "object",
+      "description": "Optional metadata describing how artifacts map to pipeline fields (DocBook style map, Scribus frame bindings, etc.).",
+      "properties": {
+        "docbook": {
+          "type": "object",
+          "properties": {
+            "styles": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "stylesheet": {
+              "type": "string"
+            },
+            "namespace": {
+              "type": "string"
+            }
+          }
+        },
+        "scribus": {
+          "type": "object",
+          "properties": {
+            "frames": {
+              "type": "string",
+              "description": "Path to serialized frame metadata derived from Scribus."
+            },
+            "masters": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

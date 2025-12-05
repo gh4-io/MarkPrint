@@ -6,6 +6,8 @@ var url = require('url');
 var os = require('os');
 var INSTALL_CHECK = false;
 const debugLogger = require('./src/debugLogger');
+const { resolveSettingPath } = require('./src/pathResolver');
+const { resolveStylesheetHref } = require('./src/stylesheetResolver');
 
 // MarkPrint Phase 1: Template Foundations
 const TemplateRegistry = require('./src/templateRegistry');
@@ -16,8 +18,32 @@ const SchemaValidator = require('./src/schemaValidator');
 let templateRegistry;
 let statusBarManager;
 let schemaValidator;
+const deprecatedSettingWarnings = new Set();
+
+function warnIfDeprecatedSettingUsed(settingKey, guidance) {
+  try {
+    const config = vscode.workspace.getConfiguration('markprint');
+    const inspected = config.inspect(settingKey);
+    if (!inspected) {
+      return;
+    }
+    const hasOverride =
+      inspected.workspaceFolderValue !== undefined ||
+      inspected.workspaceValue !== undefined ||
+      inspected.globalValue !== undefined;
+    if (hasOverride && !deprecatedSettingWarnings.has(settingKey)) {
+      const message = `markprint.${settingKey} is deprecated. ${guidance}`;
+      vscode.window.showWarningMessage(message);
+      debugLogger.log('settings', message);
+      deprecatedSettingWarnings.add(settingKey);
+    }
+  } catch (error) {
+    console.warn('Failed to check deprecated setting', settingKey, error.message);
+  }
+}
 
 function activate(context) {
+  process.env.MARKPRINT_EXTENSION_PATH = context.extensionPath;
   init();
 
   // Initialize Phase 1 components
@@ -72,11 +98,12 @@ function activate(context) {
   // Handle build modes
   var buildMode = vscode.workspace.getConfiguration('markprint')['buildMode'] || 'manual';
   var isConvertOnSave = vscode.workspace.getConfiguration('markprint')['convertOnSave'];
+  warnIfDeprecatedSettingUsed('convertOnSave', 'Use markprint.buildMode set to "auto" or "hybrid" instead.');
 
   // Legacy convertOnSave or auto mode
   if (isConvertOnSave || buildMode === 'auto') {
-    var disposable_onsave = vscode.workspace.onDidSaveTextDocument(function (doc) {
-      markdownPdfOnSave(doc, context);
+    var disposable_onsave = vscode.workspace.onDidSaveTextDocument(async function (doc) {
+      await markdownPdfOnSave(doc, context);
     });
     context.subscriptions.push(disposable_onsave);
   }
@@ -183,6 +210,33 @@ async function markprint(option_type, context) {
     if (context && templateRegistry && schemaValidator) {
       const template = await templateRegistry.getTemplateForDocument(editor.document, context.workspaceState);
       if (template) {
+        const rendererInfo = template.renderer || { engine: 'chromium' };
+        const rendererEngine = rendererInfo.engine || 'chromium';
+        if (rendererEngine !== 'chromium') {
+          debugLogger.log('renderer', 'Renderer hint not yet supported. Continuing with Chromium export.', {
+            document: editor.document.uri.fsPath,
+            requestedEngine: rendererEngine,
+            templateId: template.id
+          });
+        } else {
+          debugLogger.log('renderer', 'Using Chromium renderer for export', {
+            document: editor.document.uri.fsPath,
+            templateId: template.id
+          });
+        }
+
+        const layoutHint =
+          template.layoutRendererHint ||
+          (template.layoutDescriptor && template.layoutDescriptor.rendererHint) ||
+          null;
+        if (layoutHint && layoutHint !== 'chromium') {
+          debugLogger.log('renderer', 'Layout requested alternate renderer', {
+            document: editor.document.uri.fsPath,
+            templateId: template.id,
+            layoutHint
+          });
+        }
+
         const isValid = await schemaValidator.validateDocument(editor.document, template);
         if (!isValid) {
           vscode.window.showErrorMessage('Export blocked: template validation failed. Check Problems panel.');
@@ -218,9 +272,13 @@ async function markprint(option_type, context) {
         if (types_format.indexOf(type) >= 0) {
           filename = mdfilename.replace(ext, '.' + type);
           var text = editor.document.getText();
-          var content = convertMarkdownToHtml(mdfilename, type, text);
-          var html = makeHtml(content, uri);
-          await exportPdf(html, filename, type, uri);
+          await renderWithChromium({
+            type,
+            uri,
+            text,
+            filename,
+            sourcePath: mdfilename
+          });
         } else {
           showErrorMessage('markprint().2 Supported formats: html, pdf, png, jpeg.');
           return;
@@ -231,29 +289,48 @@ async function markprint(option_type, context) {
       return;
     }
   } catch (error) {
-    showErrorMessage('markprint()', error);
+    if (!error || !error.__markprintLogged) {
+      showErrorMessage('markprint()', error);
+    } else {
+      console.error('markprint()', error && error.message ? error.message : error);
+    }
   }
 }
 
-function markdownPdfOnSave(doc, context) {
+// Chromium renderer pipeline
+async function renderWithChromium({ type, uri, text, filename, sourcePath }) {
+  debugLogger.log('renderer', 'Chromium render start', {
+    type,
+    document: sourcePath
+  });
+  const content = convertMarkdownToHtml(sourcePath, type, text);
+  const html = makeHtml(content, uri);
+  if (typeof html !== 'string' || html.length === 0) {
+    throw new Error('Chromium renderer produced empty HTML content.');
+  }
+  await exportPdf(html, filename, type, uri);
+}
+
+async function markdownPdfOnSave(doc, context) {
   try {
-    var editor = vscode.window.activeTextEditor;
-    var mode = editor.document.languageId;
-    if (mode != 'markdown') {
+    if (!doc || doc.languageId !== 'markdown') {
       return;
     }
-    if (!isMarkdownPdfOnSaveExclude()) {
-      markdownPdf('settings', context);
+    if (!isMarkdownPdfOnSaveExclude(doc)) {
+      await markprint('settings', context);
     }
   } catch (error) {
     showErrorMessage('markdownPdfOnSave()', error);
   }
 }
 
-function isMarkdownPdfOnSaveExclude() {
-  try{
-    var editor = vscode.window.activeTextEditor;
-    var filename = path.basename(editor.document.fileName);
+function isMarkdownPdfOnSaveExclude(doc) {
+  try {
+    const target = doc || vscode.window.activeTextEditor && vscode.window.activeTextEditor.document;
+    if (!target) {
+      return false;
+    }
+    const filename = path.basename(target.fileName);
     var patterns = vscode.workspace.getConfiguration('markprint')['convertOnSaveExclude'] || '';
     var pattern;
     var i;
@@ -474,6 +551,7 @@ function makeHtml(data, uri) {
     return mustache.render(template, view);
   } catch (error) {
     showErrorMessage('makeHtml()', error);
+    throw error;
   }
 }
 
@@ -483,7 +561,9 @@ function makeHtml(data, uri) {
 function exportHtml(data, filename) {
   fs.writeFile(filename, data, 'utf-8', function (error) {
     if (error) {
-      showErrorMessage('exportHtml()', error);
+      if (!error.__markprintLogged) {
+        showErrorMessage('exportHtml()', error);
+      }
       return;
     }
   });
@@ -526,8 +606,10 @@ function exportPdf(data, filename, type, uri) {
         var f = path.parse(filename);
         tmpfilename = path.join(f.dir, f.name + '_tmp.html');
         exportHtml(data, tmpfilename);
+        const executablePathSetting = vscode.workspace.getConfiguration('markprint')['executablePath'] || '';
+        const executablePath = resolveSettingPath(executablePathSetting, uri);
         var options = {
-          executablePath: vscode.workspace.getConfiguration('markprint')['executablePath'] || puppeteer.executablePath(),
+          executablePath: executablePath || puppeteer.executablePath(),
           args: ['--lang='+vscode.env.language, '--no-sandbox', '--disable-setuid-sandbox']
           // Setting Up Chrome Linux Sandbox
           // https://github.com/puppeteer/puppeteer/blob/master/docs/troubleshooting.md#setting-up-chrome-linux-sandbox
@@ -621,7 +703,11 @@ function exportPdf(data, filename, type, uri) {
         await browser.close();
         vscode.window.setStatusBarMessage('$(markdown) ' + exportFilename, StatusbarMessageTimeout);
       } catch (error) {
-        showErrorMessage('exportPdf()', error);
+        if (!error || !error.__markprintLogged) {
+          showErrorMessage('exportPdf()', error);
+        } else {
+          console.error('exportPdf()', error && error.message ? error.message : error);
+        }
       } finally {
         if (!debug && tmpfilename && isExistsPath(tmpfilename)) {
           deleteFile(tmpfilename);
@@ -693,7 +779,8 @@ function getOutputDir(filename, resource) {
     if (resource === undefined) {
       return filename;
     }
-    var outputDirectory = vscode.workspace.getConfiguration('markprint')['outputDirectory'] || '';
+    var outputDirectorySetting = vscode.workspace.getConfiguration('markprint')['outputDirectory'] || '';
+    var outputDirectory = resolveSettingPath(outputDirectorySetting, resource);
     if (outputDirectory.length === 0) {
       return filename;
     }
@@ -758,9 +845,9 @@ function readFile(filename, encode) {
   }
   if (isExistsPath(filename)) {
     return fs.readFileSync(filename, encode);
-  } else {
-    return '';
   }
+
+  throw new Error(`File not found: ${filename} (${path.isAbsolute(filename) ? 'absolute' : 'relative'})`);
 }
 
 function convertImgPath(src, filename) {
@@ -829,9 +916,21 @@ function readStyles(uri) {
       styles = markdownConfig ? markdownConfig['styles'] : '';
       if (styles && Array.isArray(styles) && styles.length > 0) {
         for (i = 0; i < styles.length; i++) {
-          var href = fixHref(uri, styles[i]);
-          style += '<link rel=\"stylesheet\" href=\"' + href + '\" type=\"text/css\">';
-          appliedStyles.push({ type: 'markdown.styles', original: styles[i], resolved: href });
+          const expandedMarkdownStyle = resolveSettingPath(styles[i], uri);
+          if (!expandedMarkdownStyle) {
+            continue;
+          }
+          var href = fixHref(uri, expandedMarkdownStyle);
+          const injection = buildStyleInjection(href);
+          style += injection.snippet;
+          appliedStyles.push({
+            type: 'markdown.styles',
+            original: styles[i],
+            expanded: expandedMarkdownStyle,
+            resolved: href,
+            mode: injection.mode,
+            filePath: injection.filePath || null
+          });
         }
       }
     }
@@ -862,12 +961,23 @@ function readStyles(uri) {
     }
 
     // 5. read the style of the markprint.styles settings.
-    styles = vscode.workspace.getConfiguration('markprint')['styles'] || '';
+    const markprintConfig = vscode.workspace.getConfiguration('markprint');
+    styles = markprintConfig['styles'] || '';
     if (styles && Array.isArray(styles) && styles.length > 0) {
       for (i = 0; i < styles.length; i++) {
-        var href = fixHref(uri, styles[i]);
-        style += '<link rel=\"stylesheet\" href=\"' + href + '\" type=\"text/css\">';
-        appliedStyles.push({ type: 'markprint.styles', original: styles[i], resolved: href });
+        const expanded = resolveSettingPath(styles[i], uri) || styles[i];
+        const resolvedStyle = resolveStylesheetHref(styles[i], expanded, uri);
+        const injection = buildStyleInjection(resolvedStyle.href);
+        style += injection.snippet;
+        appliedStyles.push({
+          type: 'markprint.styles',
+          original: styles[i],
+          expanded,
+          resolved: resolvedStyle.href,
+          mode: injection.mode,
+          filePath: resolvedStyle.resolvedPath || injection.filePath || null,
+          origin: resolvedStyle.origin || 'unknown'
+        });
       }
     }
 
@@ -883,8 +993,36 @@ function readStyles(uri) {
 
     return style;
   } catch (error) {
-    showErrorMessage('readStyles()', error);
+    throw error;
   }
+}
+
+function buildStyleInjection(href) {
+  if (!href) {
+    return { snippet: '', mode: 'skip' };
+  }
+  const inlineCandidate = tryInlineLocalStylesheet(href);
+  if (inlineCandidate) {
+    return { snippet: inlineCandidate.css, mode: 'inline', filePath: inlineCandidate.filePath };
+  }
+  return { snippet: '<link rel=\"stylesheet\" href=\"' + href + '\" type=\"text/css\">', mode: 'link' };
+}
+
+function tryInlineLocalStylesheet(href) {
+  try {
+    const parsed = vscode.Uri.parse(href);
+    if (parsed.scheme && parsed.scheme !== 'file') {
+      return null;
+    }
+    const filePath = parsed.scheme === 'file' ? parsed.fsPath : href;
+    const css = makeCss(filePath);
+    if (css && css.length > 0) {
+      return { css, filePath };
+    }
+  } catch (error) {
+    console.warn('Failed to inline stylesheet:', error.message);
+  }
+  return null;
 }
 
 /*
@@ -933,7 +1071,8 @@ function fixHref(resource, href) {
 function checkPuppeteerBinary() {
   try {
     // settings.json
-    var executablePath = vscode.workspace.getConfiguration('markprint')['executablePath'] || ''
+    var executablePathSetting = vscode.workspace.getConfiguration('markprint')['executablePath'] || '';
+    var executablePath = resolveSettingPath(executablePathSetting);
     if (isExistsPath(executablePath)) {
       INSTALL_CHECK = true;
       return true;
@@ -1009,11 +1148,21 @@ function installChromium() {
 }
 
 function showErrorMessage(msg, error) {
-  vscode.window.showErrorMessage('ERROR: ' + msg);
-  console.log('ERROR: ' + msg);
-  if (error) {
-    vscode.window.showErrorMessage(error.toString());
-    console.log(error);
+  const detail = error
+    ? (error instanceof Error ? (error.message || error.toString()) : String(error))
+    : '';
+  const combined = detail ? `${msg} - ${detail}` : msg;
+  const formatted = `ERROR: ${combined}`;
+
+  vscode.window.showErrorMessage(formatted);
+  if (error && error.stack) {
+    console.error(formatted);
+    console.error(error.stack);
+  } else {
+    console.error(formatted);
+  }
+  if (error && typeof error === 'object') {
+    error.__markprintLogged = true;
   }
 }
 

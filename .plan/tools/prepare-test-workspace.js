@@ -5,18 +5,21 @@ const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..', '..');
 const testWorkspace = path.join(repoRoot, 'test', '.test-workspace');
-const templateSrc = path.join(repoRoot, 'templates', 'standard-letter.json');
-const schemaSrc = path.join(repoRoot, '.markprint', 'schemas', 'standard-letter.schema.json');
 const sopSrc = path.join(repoRoot, '.plan', 'ref', 'SOP-200_Create_Workackage_Sequencing_Type.md');
 const stylesSrc = path.join(repoRoot, 'styles');
 const vscodeConfigSrc = path.join(repoRoot, '.vscode');
-
-const templateDest = path.join(testWorkspace, '.markprint', 'templates', path.basename(templateSrc));
-const schemaDest = path.join(testWorkspace, '.markprint', 'schemas', path.basename(schemaSrc));
+const schemasSrcDir = path.join(repoRoot, '.markprint', 'schemas');
 const sopDest = path.join(testWorkspace, path.basename(sopSrc));
 const stylesDest = path.join(testWorkspace, 'styles');
 const vscodeConfigDest = path.join(testWorkspace, '.vscode');
+const schemasDestDir = path.join(testWorkspace, '.markprint', 'schemas');
 const GENERATED_EXTENSIONS = new Set(['.html', '.pdf', '.png', '.jpeg', '.jpg']);
+
+function removePath(targetPath) {
+  if (fs.existsSync(targetPath)) {
+    fs.rmSync(targetPath, { recursive: true, force: true });
+  }
+}
 
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -88,10 +91,14 @@ function main() {
 
   ensureDir(testWorkspace);
   cleanGeneratedFiles(testWorkspace);
-  copyFile(templateSrc, templateDest);
-  copyFile(schemaSrc, schemaDest);
+  console.log('[prepare-test-workspace] Mirroring schemas directory');
+  copyDirectory(schemasSrcDir, schemasDestDir);
+  console.log('[prepare-test-workspace] Removing workspace template overrides');
+  removePath(path.join(testWorkspace, '.markprint', 'templates'));
   copyFile(sopSrc, sopDest);
+  console.log('[prepare-test-workspace] Mirroring styles directory');
   copyDirectory(stylesSrc, stylesDest);
+  console.log('[prepare-test-workspace] Mirroring .vscode directory');
   copyDirectory(vscodeConfigSrc, vscodeConfigDest);
 
   console.log('Test workspace prepared at', testWorkspace);

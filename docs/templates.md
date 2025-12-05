@@ -106,7 +106,8 @@ Child templates merge with parent (child values override parent).
 
 ```yaml
 ---
-layout_template: standard-letter
+pipeline_profile: standard-letter
+layout_template: standard-letter # optional legacy alias
 title: My Document
 document_id: SOP-100
 revision: "1.0"
@@ -115,7 +116,7 @@ revision: "1.0"
 
 ### 2. Workspace State (Remembered)
 
-If no `layout_template` in front matter, MarkPrint checks workspace state for last selection for that file.
+If no `pipeline_profile` (or `layout_template`) exists in front matter, MarkPrint checks workspace state for the last selection for that file.
 
 ### 3. QuickPick (First Time)
 
@@ -165,11 +166,16 @@ Schema example:
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["layout_template", "title", "document_id", "revision"],
+  "required": ["pipeline_profile", "title", "document_id", "revision"],
   "properties": {
-    "layout_template": {
+    "pipeline_profile": {
       "type": "string",
       "const": "standard-letter"
+    },
+    "layout_template": {
+      "type": "string",
+      "const": "standard-letter",
+      "description": "Legacy alias"
     },
     "title": {
       "type": "string",

@@ -1,0 +1,211 @@
+/* DTS Master Report Theme (converted from DTS_Master_Report_Template.sla)
+ * - US Letter, portrait, generous margins (0.75in top/bottom, 0.5in sides)
+ * - Trebuchet MS headings, Arial body copy to match SLA defaults
+ * - Header ribbon with document metadata grid
+ * - Narrow status pill anchored bottom-right
+ * This stylesheet is meant to be inlined for exports, but still works as a linked asset.
+ */
+
+@page {
+  size: Letter;
+  margin: 0.75in 0.5in 0.75in 0.5in;
+}
+
+:root {
+  --dts-base: #0b2447;
+  --dts-accent: #19376d;
+  --dts-panel: #edf2fb;
+  --dts-muted: #5c677d;
+  --dts-border: #d7deed;
+  --dts-status-approved: #2f9e44;
+  --dts-status-review: #e67700;
+  --dts-status-draft: #495057;
+  --dts-font-sans: 'Arial', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --dts-font-heading: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+}
+
+html,
+body {
+  font-family: var(--dts-font-sans);
+  line-height: 1.55;
+  color: #1f2937;
+  background: #f5f7fb;
+}
+
+body {
+  padding: 0;
+}
+
+article,
+.markdown-body {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid var(--dts-border);
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
+  padding: 1.25in 0.9in 1in 0.9in;
+  margin: 0 auto;
+}
+
+.dts-header {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1rem;
+  border-bottom: 2px solid var(--dts-border);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.dts-branding h1,
+.dts-branding h2 {
+  margin: 0;
+  font-family: var(--dts-font-heading);
+}
+
+.dts-branding h1 {
+  font-size: 1.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dts-base);
+}
+
+.dts-branding h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--dts-muted);
+}
+
+.dts-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.dts-meta-card {
+  border: 1px solid var(--dts-border);
+  border-radius: 12px;
+  padding: 0.6rem 0.9rem;
+  background: var(--dts-panel);
+}
+
+.dts-meta-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dts-muted);
+}
+
+.dts-meta-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0b213f;
+}
+
+.dts-status-pill {
+  position: absolute;
+  bottom: 0.9in;
+  right: 0.85in;
+  min-width: 1.6in;
+  text-align: center;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: var(--dts-status-draft);
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.dts-status-pill[data-status='APPROVED'] {
+  background: var(--dts-status-approved);
+}
+
+.dts-status-pill[data-status='REVIEW'],
+.dts-status-pill[data-status='IN_REVIEW'] {
+  background: var(--dts-status-review);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--dts-font-heading);
+  color: var(--dts-base);
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 2.2rem;
+}
+
+h2 {
+  margin-top: 2.25rem;
+  font-size: 1.35rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  padding-bottom: 0.35rem;
+}
+
+p {
+  margin-bottom: 0.95rem;
+}
+
+blockquote {
+  background: var(--dts-panel);
+  border-left: 6px solid var(--dts-accent);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  color: var(--dts-base);
+  font-style: italic;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.95rem;
+}
+
+table thead {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+table th,
+table td {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+}
+
+table tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.02);
+}
+
+code,
+pre {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  background: #0b1f3a;
+  color: #fff;
+}
+
+pre {
+  border-radius: 16px;
+  padding: 1rem 1.2rem;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+code:not(pre code) {
+  border-radius: 6px;
+  padding: 0.15rem 0.35rem;
+}
+
+footer {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--dts-muted);
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding-top: 0.75rem;
+}
