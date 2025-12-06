@@ -259,38 +259,69 @@ class SchemaValidator {
    */
   async loadSchema(schemaPath, workspaceFolder) {
     try {
-      // Resolve schema path (could be relative to workspace or absolute)
-      let fullPath;
+      if (!schemaPath) {
+        return null;
+      }
+
+      const extensionRoot = process.env.MARKPRINT_EXTENSION_PATH || path.join(__dirname, '..');
+      const workspaceFolders = vscode.workspace.workspaceFolders || [];
+      const defaultWorkspaceRoot =
+        workspaceFolder ||
+        (workspaceFolders.length > 0 ? workspaceFolders[0].uri.fsPath : null);
+
+      const candidatePaths = [];
+      const pushCandidate = (candidate) => {
+        if (!candidate) {
+          return;
+        }
+        const normalized = path.normalize(candidate);
+        if (!candidatePaths.includes(normalized)) {
+          candidatePaths.push(normalized);
+        }
+      };
 
       if (path.isAbsolute(schemaPath)) {
-        fullPath = schemaPath;
-      } else if (workspaceFolder) {
-        fullPath = path.join(workspaceFolder, schemaPath);
+        pushCandidate(schemaPath);
       } else {
-        // Try workspace folders
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (workspaceFolders && workspaceFolders.length > 0) {
-          fullPath = path.join(workspaceFolders[0].uri.fsPath, schemaPath);
-        } else {
-          console.error('No workspace folder available for schema resolution');
-          return null;
+        if (workspaceFolder) {
+          pushCandidate(path.join(workspaceFolder, schemaPath));
+        }
+        if (defaultWorkspaceRoot && !workspaceFolder) {
+          pushCandidate(path.join(defaultWorkspaceRoot, schemaPath));
+        }
+        if (extensionRoot) {
+          pushCandidate(path.join(extensionRoot, schemaPath));
+        }
+      }
+
+      if (candidatePaths.length === 0) {
+        console.error('No candidates available for schema resolution', schemaPath);
+        return null;
+      }
+
+      let resolvedPath = null;
+      for (const candidate of candidatePaths) {
+        if (fs.existsSync(candidate)) {
+          resolvedPath = candidate;
+          break;
         }
       }
 
       console.log('Schema resolution:', {
         schemaPath,
         workspaceFolder,
-        fullPath,
-        exists: fs.existsSync(fullPath)
+        candidatesTried: candidatePaths,
+        resolvedPath,
+        exists: Boolean(resolvedPath)
       });
 
-      if (!fs.existsSync(fullPath)) {
-        console.error('Schema file not found:', fullPath);
+      if (!resolvedPath) {
+        console.error('Schema file not found in any candidate path for:', schemaPath);
         return null;
       }
 
-      const content = fs.readFileSync(fullPath, 'utf-8');
-      return { schema: JSON.parse(content), schemaPath: fullPath };
+      const content = fs.readFileSync(resolvedPath, 'utf-8');
+      return { schema: JSON.parse(content), schemaPath: resolvedPath };
     } catch (error) {
       console.error('Failed to load schema:', error);
       return null;

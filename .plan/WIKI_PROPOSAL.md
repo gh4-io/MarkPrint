@@ -60,6 +60,7 @@ This proposal defines the structure, standards, and maintenance expectations for
 ```
 docs/
   README.md
+  introduction/
   quick-reference/
     index.md
     *.md (kebab-case cheat sheets)

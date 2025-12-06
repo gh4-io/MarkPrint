@@ -11,6 +11,11 @@
       "description": "Pipeline profile identifier that selects the Standard Letter manifest.",
       "const": "standard-letter"
     },
+    "layout_profile": {
+      "type": "string",
+      "description": "Alternate alias for pipeline_profile. Accepts the same value as pipeline_profile for backwards compatibility.",
+      "const": "standard-letter"
+    },
     "layout_template": {
       "type": "string",
       "description": "Legacy alias for pipeline_profile. Maintained for backward compatibility.",

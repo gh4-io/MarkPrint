@@ -79,6 +79,7 @@ update rules:
 - apply targeted edits; avoid full rewrites unless explicitly asked (this rewrite was user-approved).
 - append a changelog note: `# PRP updated <YYYY-MM-DD> <summary>`.
 - confirm completion in chat: `PRP updated: <summary>`.
+- ensure related wiki/`docs/` content is updated in the same session so the documentation mirrors PRP changes.
 - retain history; version sections or add dated notes instead of deleting prior expectations unless deprecation is required.
 - when unsure, ask before persisting changes.
 

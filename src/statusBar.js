@@ -12,8 +12,13 @@ class StatusBarManager {
       vscode.StatusBarAlignment.Right,
       100
     );
+    this.templateStatusItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      99
+    );
     this.currentTemplate = null;
     this.buildMode = 'manual';
+    this.templateWarning = null;
   }
 
   /**
@@ -22,6 +27,9 @@ class StatusBarManager {
   initialize() {
     this.updateBuildMode();
     this.statusBarItem.show();
+    this.templateStatusItem.command = 'markprint.selectTemplate';
+    this.templateStatusItem.show();
+    this.updateTemplateDisplay();
   }
 
   /**
@@ -39,6 +47,8 @@ class StatusBarManager {
   setTemplate(template) {
     this.currentTemplate = template;
     this.updateDisplay();
+    this.templateWarning = null;
+    this.updateTemplateDisplay();
   }
 
   /**
@@ -47,6 +57,8 @@ class StatusBarManager {
   clearTemplate() {
     this.currentTemplate = null;
     this.updateDisplay();
+    this.templateWarning = null;
+    this.updateTemplateDisplay();
   }
 
   /**
@@ -65,6 +77,30 @@ class StatusBarManager {
     this.statusBarItem.text = text;
     this.statusBarItem.tooltip = this.getTooltip();
     this.statusBarItem.command = 'markprint.changeBuildMode';
+  }
+
+  /**
+   * Update template status bar display
+   */
+  updateTemplateDisplay() {
+    if (!this.templateStatusItem) {
+      return;
+    }
+
+    if (this.templateWarning) {
+      this.templateStatusItem.text = `$(warning) ${this.templateWarning.label}`;
+      this.templateStatusItem.tooltip = this.templateWarning.tooltip;
+      return;
+    }
+
+    if (this.currentTemplate) {
+      this.templateStatusItem.text = `$(file-code) ${this.currentTemplate.label}`;
+      this.templateStatusItem.tooltip = `Active pipeline profile\n${this.currentTemplate.label} (v${this.currentTemplate.version})\nClick to change profile`;
+      return;
+    }
+
+    this.templateStatusItem.text = '$(file-code) Select template';
+    this.templateStatusItem.tooltip = 'No pipeline profile selected. Click to choose a template.';
   }
 
   /**
@@ -111,6 +147,25 @@ class StatusBarManager {
   }
 
   /**
+   * Indicate that user action is required to pick a template
+   */
+  showTemplateWarning(message) {
+    this.templateWarning = {
+      label: 'Select pipeline profile',
+      tooltip: message || 'Pipeline profile required. Click to pick a template.'
+    };
+    this.updateTemplateDisplay();
+  }
+
+  /**
+   * Clear template warning indicator
+   */
+  clearTemplateWarning() {
+    this.templateWarning = null;
+    this.updateTemplateDisplay();
+  }
+
+  /**
    * Show build mode picker
    */
   async showBuildModePicker() {
@@ -151,6 +206,9 @@ class StatusBarManager {
    */
   dispose() {
     this.statusBarItem.dispose();
+    if (this.templateStatusItem) {
+      this.templateStatusItem.dispose();
+    }
   }
 }
 

@@ -8,11 +8,9 @@ const testWorkspace = path.join(repoRoot, 'test', '.test-workspace');
 const sopSrc = path.join(repoRoot, '.plan', 'ref', 'SOP-200_Create_Workackage_Sequencing_Type.md');
 const stylesSrc = path.join(repoRoot, 'styles');
 const vscodeConfigSrc = path.join(repoRoot, '.vscode');
-const schemasSrcDir = path.join(repoRoot, '.markprint', 'schemas');
 const sopDest = path.join(testWorkspace, path.basename(sopSrc));
 const stylesDest = path.join(testWorkspace, 'styles');
 const vscodeConfigDest = path.join(testWorkspace, '.vscode');
-const schemasDestDir = path.join(testWorkspace, '.markprint', 'schemas');
 const GENERATED_EXTENSIONS = new Set(['.html', '.pdf', '.png', '.jpeg', '.jpg']);
 
 function removePath(targetPath) {
@@ -91,8 +89,6 @@ function main() {
 
   ensureDir(testWorkspace);
   cleanGeneratedFiles(testWorkspace);
-  console.log('[prepare-test-workspace] Mirroring schemas directory');
-  copyDirectory(schemasSrcDir, schemasDestDir);
   console.log('[prepare-test-workspace] Removing workspace template overrides');
   removePath(path.join(testWorkspace, '.markprint', 'templates'));
   copyFile(sopSrc, sopDest);

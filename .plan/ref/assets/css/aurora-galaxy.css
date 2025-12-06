@@ -1,0 +1,283 @@
+/*
+ * Aurora Galaxy Markdown Skin
+ * Inspired by VS Code's default markdown.css but tuned for bold gradients,
+ * deep-space backgrounds, and neon accents for callouts and code blocks.
+ */
+
+:root {
+  --aurora-bg: #050714;
+  --aurora-panel: #0f1a2b;
+  --aurora-panel-light: #1c2c45;
+  --aurora-text: #dbe2ff;
+  --aurora-muted: #8ea0c9;
+  --aurora-accent: #8ef5ff;
+  --aurora-accent-2: #ff8bf1;
+  --aurora-accent-3: #ffd28e;
+  --aurora-code-bg: linear-gradient(135deg, #0f1729, #1c2547 65%, #321b4f);
+  --aurora-table-stripe: rgba(255, 255, 255, 0.05);
+  --aurora-border: rgba(255, 255, 255, 0.12);
+  --aurora-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  --aurora-radius: 14px;
+  --aurora-transition: 180ms ease;
+}
+
+body {
+  font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  padding: 56px 12vw 80px;
+  background: radial-gradient(circle at 15% 20%, rgba(142, 245, 255, 0.16), transparent 45%),
+              radial-gradient(circle at 85% 10%, rgba(255, 139, 241, 0.18), transparent 50%),
+              var(--aurora-bg);
+  color: var(--aurora-text);
+}
+
+body > * {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+a {
+  color: var(--aurora-accent);
+  text-decoration: none;
+  transition: color var(--aurora-transition);
+  border-bottom: 1px dashed rgba(142, 245, 255, 0.55);
+}
+
+a:hover,
+a:focus {
+  color: var(--aurora-accent-2);
+  border-bottom-color: rgba(255, 139, 241, 0.8);
+}
+
+hr {
+  border: none;
+  margin: 48px auto;
+  max-width: 360px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--aurora-accent), transparent);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0 0 24px;
+  letter-spacing: 0.02em;
+  position: relative;
+  color: var(--aurora-accent-3);
+}
+
+h1 {
+  font-size: 2.6rem;
+  color: var(--aurora-accent);
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.6rem;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 1.3rem;
+  color: var(--aurora-accent-2);
+}
+
+h2::after,
+h3::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--aurora-accent), transparent);
+  margin-top: 12px;
+}
+
+p {
+  margin: 0 0 24px;
+  color: var(--aurora-text);
+}
+
+ul,
+ol {
+  margin: 0 0 24px 24px;
+  padding-left: 18px;
+}
+
+li + li {
+  margin-top: 10px;
+}
+
+blockquote {
+  margin: 32px 0;
+  padding: 20px 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 5px solid var(--aurora-accent);
+  border-radius: var(--aurora-radius);
+  color: var(--aurora-muted);
+  box-shadow: var(--aurora-shadow);
+}
+
+code {
+  font-family: "JetBrains Mono", "Fira Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.95em;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+pre {
+  margin: 28px 0;
+  border-radius: var(--aurora-radius);
+  background: var(--aurora-code-bg);
+  box-shadow: var(--aurora-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+pre code {
+  display: block;
+  padding: 28px 32px;
+  background: transparent;
+  color: #f1f6ff;
+  tab-size: 4;
+}
+
+pre::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 32px 0;
+  background: var(--aurora-panel);
+  box-shadow: var(--aurora-shadow);
+  border-radius: var(--aurora-radius);
+  overflow: hidden;
+}
+
+thead {
+  background: rgba(142, 245, 255, 0.12);
+}
+
+th,
+td {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--aurora-border);
+}
+
+tbody tr:nth-child(odd) {
+  background: var(--aurora-table-stripe);
+}
+
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+img {
+  border-radius: var(--aurora-radius);
+  box-shadow: var(--aurora-shadow);
+  margin: 32px 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Callout containers (::: info, warning, etc.) */
+.info,
+.tip,
+.warning,
+.danger {
+  padding: 20px 26px;
+  border-radius: var(--aurora-radius);
+  margin: 32px 0;
+  color: #0d1117;
+  font-weight: 500;
+  border-left: 6px solid transparent;
+}
+
+.info {
+  background: rgba(142, 245, 255, 0.8);
+  border-left-color: #38a7c9;
+}
+
+.tip {
+  background: rgba(167, 255, 180, 0.85);
+  border-left-color: #17b47c;
+}
+
+.warning {
+  background: rgba(255, 210, 142, 0.9);
+  border-left-color: #f79d2f;
+}
+
+.danger {
+  background: rgba(255, 139, 146, 0.85);
+  border-left-color: #d7484b;
+}
+
+.info strong,
+.tip strong,
+.warning strong,
+.danger strong {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* Task list checkboxes */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+  margin-right: 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  appearance: none;
+  background: transparent;
+  transition: background var(--aurora-transition), border var(--aurora-transition);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--aurora-accent);
+  border-color: var(--aurora-accent);
+  box-shadow: 0 0 0 2px rgba(142, 245, 255, 0.3);
+}
+
+/* Mermaid / diagram container tweaks */
+.mermaid {
+  border-radius: var(--aurora-radius);
+  background: var(--aurora-panel-light);
+  padding: 18px;
+  margin: 32px 0;
+  box-shadow: var(--aurora-shadow);
+}
+
+/* Footer signature */
+body::after {
+  content: "Rendered with the Aurora Galaxy theme";
+  display: block;
+  margin-top: 60px;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.35);
+}

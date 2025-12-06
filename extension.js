@@ -13,11 +13,17 @@ const { resolveStylesheetHref } = require('./src/stylesheetResolver');
 const TemplateRegistry = require('./src/templateRegistry');
 const StatusBarManager = require('./src/statusBar');
 const SchemaValidator = require('./src/schemaValidator');
+const packageJson = require('./package.json');
+
+const EXTENSION_DISPLAY_NAME =
+  (packageJson && (packageJson.displayName || packageJson.name)) ||
+  'MarkPrint';
 
 // Global instances
 let templateRegistry;
 let statusBarManager;
 let schemaValidator;
+let extensionContext;
 const deprecatedSettingWarnings = new Set();
 
 function warnIfDeprecatedSettingUsed(settingKey, guidance) {
@@ -43,11 +49,13 @@ function warnIfDeprecatedSettingUsed(settingKey, guidance) {
 }
 
 function activate(context) {
+  extensionContext = context;
   process.env.MARKPRINT_EXTENSION_PATH = context.extensionPath;
   init();
 
   // Initialize Phase 1 components
   templateRegistry = new TemplateRegistry(context);
+  templateRegistry.setFallbackSelector(payload => handleTemplateFallback(payload));
   statusBarManager = new StatusBarManager();
   schemaValidator = new SchemaValidator();
 
@@ -206,9 +214,12 @@ async function markprint(option_type, context) {
       return;
     }
 
+    let activeTemplate = null;
+
     // Phase 1: Validate template if available
     if (context && templateRegistry && schemaValidator) {
-      const template = await templateRegistry.getTemplateForDocument(editor.document, context.workspaceState);
+      activeTemplate = await templateRegistry.getTemplateForDocument(editor.document, context.workspaceState);
+      const template = activeTemplate;
       if (template) {
         const rendererInfo = template.renderer || { engine: 'chromium' };
         const rendererEngine = rendererInfo.engine || 'chromium';
@@ -267,17 +278,18 @@ async function markprint(option_type, context) {
 
     // convert and export markdown to pdf, html, png, jpeg
     if (types && Array.isArray(types) && types.length > 0) {
+      const documentText = editor.document.getText();
       for (var i = 0; i < types.length; i++) {
         var type = types[i];
         if (types_format.indexOf(type) >= 0) {
           filename = mdfilename.replace(ext, '.' + type);
-          var text = editor.document.getText();
           await renderWithChromium({
             type,
             uri,
-            text,
+            text: documentText,
             filename,
-            sourcePath: mdfilename
+            sourcePath: mdfilename,
+            template: activeTemplate
           });
         } else {
           showErrorMessage('markprint().2 Supported formats: html, pdf, png, jpeg.');
@@ -298,13 +310,18 @@ async function markprint(option_type, context) {
 }
 
 // Chromium renderer pipeline
-async function renderWithChromium({ type, uri, text, filename, sourcePath }) {
+async function renderWithChromium({ type, uri, text, filename, sourcePath, template }) {
   debugLogger.log('renderer', 'Chromium render start', {
     type,
     document: sourcePath
   });
-  const content = convertMarkdownToHtml(sourcePath, type, text);
-  const html = makeHtml(content, uri);
+  const grayMatter = require('gray-matter');
+  const matterParts = grayMatter(text);
+  const content = convertMarkdownToHtml(sourcePath, type, text, { matterParts });
+  const html = makeHtml(content, uri, {
+    template,
+    frontMatter: matterParts ? matterParts.data : null
+  });
   if (typeof html !== 'string' || html.length === 0) {
     throw new Error('Chromium renderer produced empty HTML content.');
   }
@@ -352,9 +369,9 @@ function isMarkdownPdfOnSaveExclude(doc) {
 /*
  * convert markdown to html (markdown-it)
  */
-function convertMarkdownToHtml(filename, type, text) {
+function convertMarkdownToHtml(filename, type, text, options = {}) {
   var grayMatter = require("gray-matter");
-  var matterParts = grayMatter(text);
+  var matterParts = options && options.matterParts ? options.matterParts : grayMatter(text);
 
   try {
     try {
@@ -522,11 +539,15 @@ function Slug(string) {
 /*
  * make html
  */
-function makeHtml(data, uri) {
+function makeHtml(data, uri, options = {}) {
   try {
     // read styles
     var style = '';
-    style += readStyles(uri);
+    style += readStyles({
+      uri,
+      template: options.template,
+      frontMatter: options.frontMatter
+    });
 
     // get title
     var title = path.basename(uri.fsPath);
@@ -584,12 +605,16 @@ function exportPdf(data, filename, type, uri) {
   }
 
   var StatusbarMessageTimeout = vscode.workspace.getConfiguration('markprint')['StatusbarMessageTimeout'];
-  vscode.window.setStatusBarMessage('');
-  var exportFilename = getOutputDir(filename, uri);
+    vscode.window.setStatusBarMessage('');
+    var exportFilename = getOutputDir(filename, uri);
+    const documentLabelFromUri = uri && uri.fsPath ? path.basename(uri.fsPath) : null;
+    const fallbackLabel = path.basename(filename);
+    const documentLabel = documentLabelFromUri || fallbackLabel;
+    const progressTitle = `[${EXTENSION_DISPLAY_NAME}] Exporting ${documentLabel} (${type.toUpperCase()})...`;
 
-  return vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    title: '[]: Exporting (' + type + ') ...'
+    return vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: progressTitle
     }, async () => {
       let tmpfilename = null;
       const debug = vscode.workspace.getConfiguration('markprint')['debug'] || false;
@@ -892,102 +917,55 @@ function makeCss(filename) {
   }
 }
 
-function readStyles(uri) {
+function readStyles(options = {}) {
   try {
-    var style = '';
-    var styles = '';
-    var filename = '';
-    var i;
-    var appliedStyles = [];
+    const { uri, template, frontMatter } = options || {};
+    let style = '';
+    const appliedStyles = [];
 
     const includeDefaultInfo = debugLogger.describeSetting('markprint', 'includeDefaultStyles');
     const includeDefaultStyles = includeDefaultInfo.value;
+    const highlightSettingInfo = debugLogger.describeSetting('markprint', 'highlight');
+    const highlightStyleSettingInfo = debugLogger.describeSetting('markprint', 'highlightStyle');
+    const markdownStylesInfo = debugLogger.describeSetting('markdown', 'styles');
+    const markprintStylesSettingInfo = debugLogger.describeSetting('markprint', 'styles');
 
-    // 1. read the style of the vscode.
-    if (includeDefaultStyles) {
-      filename = path.join(__dirname, 'styles', 'markdown.css');
-      style += makeCss(filename);
-      appliedStyles.push({ type: 'vscode.markdown.css', path: filename, source: includeDefaultInfo.source });
-    }
+    const frontMatterEntries = resolveFrontMatterStyleEntries(frontMatter, uri);
+    const templateEntries = resolveTemplateStyleEntries(template);
+    const configuredEntries = resolveConfiguredStyleEntries(uri, includeDefaultStyles);
+    let stage = 'defaults';
 
-    // 2. read the style of the markdown.styles setting.
-    if (includeDefaultStyles) {
-      const markdownConfig = vscode.workspace.getConfiguration('markdown', uri || null);
-      styles = markdownConfig ? markdownConfig['styles'] : '';
-      if (styles && Array.isArray(styles) && styles.length > 0) {
-        for (i = 0; i < styles.length; i++) {
-          const expandedMarkdownStyle = resolveSettingPath(styles[i], uri);
-          if (!expandedMarkdownStyle) {
-            continue;
-          }
-          var href = fixHref(uri, expandedMarkdownStyle);
-          const injection = buildStyleInjection(href);
-          style += injection.snippet;
-          appliedStyles.push({
-            type: 'markdown.styles',
-            original: styles[i],
-            expanded: expandedMarkdownStyle,
-            resolved: href,
-            mode: injection.mode,
-            filePath: injection.filePath || null
-          });
-        }
-      }
-    }
-
-    // 3. read the style of the highlight.js.
-    var highlightSettingInfo = debugLogger.describeSetting('markprint', 'highlight');
-    var highlightStyleSettingInfo = debugLogger.describeSetting('markprint', 'highlightStyle');
-    var highlightStyle = highlightStyleSettingInfo.value || '';
-    var ishighlight = highlightSettingInfo.value;
-    if (ishighlight) {
-      if (highlightStyle) {
-        var css = highlightStyle;
-        filename = path.join(__dirname, 'node_modules', 'highlight.js', 'styles', css);
-        style += makeCss(filename);
-        appliedStyles.push({ type: 'highlight.js', path: filename, source: highlightStyleSettingInfo.source });
-      } else {
-        filename = path.join(__dirname, 'styles', 'tomorrow.css');
-        style += makeCss(filename);
-        appliedStyles.push({ type: 'highlight.js', path: filename, source: 'default' });
-      }
-    }
-
-    // 4. read the style of the markprint.
-    if (includeDefaultStyles) {
-      filename = path.join(__dirname, 'styles', 'markprint.css');
-      style += makeCss(filename);
-      appliedStyles.push({ type: 'markprint.default', path: filename, source: includeDefaultInfo.source });
-    }
-
-    // 5. read the style of the markprint.styles settings.
-    const markprintConfig = vscode.workspace.getConfiguration('markprint');
-    styles = markprintConfig['styles'] || '';
-    if (styles && Array.isArray(styles) && styles.length > 0) {
-      for (i = 0; i < styles.length; i++) {
-        const expanded = resolveSettingPath(styles[i], uri) || styles[i];
-        const resolvedStyle = resolveStylesheetHref(styles[i], expanded, uri);
-        const injection = buildStyleInjection(resolvedStyle.href);
-        style += injection.snippet;
-        appliedStyles.push({
-          type: 'markprint.styles',
-          original: styles[i],
-          expanded,
-          resolved: resolvedStyle.href,
-          mode: injection.mode,
-          filePath: resolvedStyle.resolvedPath || injection.filePath || null,
-          origin: resolvedStyle.origin || 'unknown'
-        });
-      }
+    if (frontMatterEntries.length > 0) {
+      stage = 'frontMatter';
+      style = applyStyleEntries(style, frontMatterEntries, appliedStyles, 'frontMatter');
+    } else if (templateEntries.length > 0) {
+      stage = 'template.resources.css';
+      style = applyStyleEntries(style, templateEntries, appliedStyles, 'template.resources.css');
+    } else if (configuredEntries.length > 0) {
+      stage = 'settings';
+      style = applyStyleEntries(style, configuredEntries, appliedStyles, 'settings');
+    } else {
+      stage = 'defaults';
+      style += applyDefaultStyleStack({
+        uri,
+        includeDefaultStyles,
+        appliedStyles,
+        includeDefaultInfo,
+        highlightSettingInfo,
+        highlightStyleSettingInfo
+      });
     }
 
     debugLogger.log('styles', 'Resolved stylesheet stack', {
       document: uri ? uri.fsPath : 'unknown',
+      stage,
       includeDefaultStyles: includeDefaultInfo,
-      markdownStyles: debugLogger.describeSetting('markdown', 'styles'),
+      frontMatterStyles: frontMatterEntries.map(entry => entry.original),
+      templateCss: template && template.resources ? template.resources.css || [] : [],
+      markdownStyles: markdownStylesInfo,
       highlight: highlightSettingInfo,
       highlightStyle: highlightStyleSettingInfo,
-      markprintStyles: debugLogger.describeSetting('markprint', 'styles'),
+      markprintStyles: markprintStylesSettingInfo,
       appliedStyles
     });
 
@@ -995,6 +973,192 @@ function readStyles(uri) {
   } catch (error) {
     throw error;
   }
+}
+
+function resolveFrontMatterStyleEntries(frontMatter, uri) {
+  if (!frontMatter) {
+    return [];
+  }
+  const values = [];
+  if (Array.isArray(frontMatter.styles)) {
+    values.push(...frontMatter.styles);
+  }
+  if (frontMatter.style) {
+    if (Array.isArray(frontMatter.style)) {
+      values.push(...frontMatter.style);
+    } else {
+      values.push(frontMatter.style);
+    }
+  }
+  return values
+    .filter(Boolean)
+    .map(value => {
+      const href = fixHref(uri, value);
+      return href ? { original: value, href } : null;
+    })
+    .filter(Boolean);
+}
+
+function resolveTemplateStyleEntries(template) {
+  if (!template || !template.resources || !Array.isArray(template.resources.css)) {
+    return [];
+  }
+  return template.resources.css
+    .filter(Boolean)
+    .map(value => {
+      const resolved = resolveTemplateStyleHref(value, template);
+      return resolved ? { original: value, href: resolved.href, resolvedPath: resolved.resolvedPath } : null;
+    })
+    .filter(Boolean);
+}
+
+function resolveConfiguredStyleEntries(uri, includeDefaultStyles) {
+  const entries = [];
+  if (includeDefaultStyles) {
+    const markdownConfig = vscode.workspace.getConfiguration('markdown', uri || null);
+    const markdownStyles = markdownConfig ? markdownConfig['styles'] : '';
+    if (markdownStyles && Array.isArray(markdownStyles) && markdownStyles.length > 0) {
+      for (let i = 0; i < markdownStyles.length; i++) {
+        const expandedMarkdownStyle = resolveSettingPath(markdownStyles[i], uri);
+        if (!expandedMarkdownStyle) {
+          continue;
+        }
+        const href = fixHref(uri, expandedMarkdownStyle);
+        if (!href) {
+          continue;
+        }
+        entries.push({
+          original: markdownStyles[i],
+          href,
+          resolvedPath: expandedMarkdownStyle,
+          source: 'markdown.styles'
+        });
+      }
+    }
+  }
+
+  const markprintConfig = vscode.workspace.getConfiguration('markprint');
+  const markprintStyles = markprintConfig['styles'] || '';
+  if (markprintStyles && Array.isArray(markprintStyles) && markprintStyles.length > 0) {
+    for (let i = 0; i < markprintStyles.length; i++) {
+      const expanded = resolveSettingPath(markprintStyles[i], uri) || markprintStyles[i];
+      try {
+        const resolvedStyle = resolveStylesheetHref(markprintStyles[i], expanded, uri);
+        entries.push({
+          original: markprintStyles[i],
+          href: resolvedStyle.href,
+          resolvedPath: resolvedStyle.resolvedPath || expanded,
+          source: resolvedStyle.origin || 'markprint.styles'
+        });
+      } catch (error) {
+        showErrorMessage('markprint.styles', error);
+      }
+    }
+  }
+  return entries;
+}
+
+function resolveTemplateStyleHref(value, template) {
+  if (!value) {
+    return null;
+  }
+  const extensionPathValue = process.env.MARKPRINT_EXTENSION_PATH || path.join(__dirname);
+  let resolved = value;
+  resolved = resolved.replace(/\$\{extensionPath\}/g, extensionPathValue);
+  if (template && template._workspaceFolder) {
+    resolved = resolved.replace(/\$\{workspaceFolder\}/g, template._workspaceFolder);
+  }
+  if (template && template._manifestDir) {
+    resolved = resolved.replace(/\$\{manifestDir\}/g, template._manifestDir);
+  }
+
+  if (/^[a-zA-Z]+:\/\//.test(resolved) || resolved.startsWith('file://')) {
+    return { href: resolved, resolvedPath: null };
+  }
+
+  if (!path.isAbsolute(resolved)) {
+    const baseDir = (template && template._manifestDir) || (template && template._workspaceFolder) || process.cwd();
+    resolved = path.resolve(baseDir, resolved);
+  }
+
+  return {
+    href: vscode.Uri.file(resolved).toString(),
+    resolvedPath: resolved
+  };
+}
+
+function applyStyleEntries(style, entries, appliedStyles, label) {
+  let buffer = style;
+  for (const entry of entries) {
+    const injection = buildStyleInjection(entry.href);
+    buffer += injection.snippet;
+    appliedStyles.push({
+      type: label,
+      original: entry.original,
+      resolved: entry.href,
+      mode: injection.mode,
+      filePath: entry.resolvedPath || injection.filePath || null,
+      source: entry.source || label
+    });
+  }
+  return buffer;
+}
+
+function applyDefaultStyleStack({ uri, includeDefaultStyles, appliedStyles, includeDefaultInfo, highlightSettingInfo, highlightStyleSettingInfo }) {
+  let buffer = '';
+  let filename = '';
+
+  if (includeDefaultStyles) {
+    filename = path.join(__dirname, 'styles', 'markdown.css');
+    buffer += makeCss(filename);
+    appliedStyles.push({ type: 'vscode.markdown.css', path: filename, source: includeDefaultInfo.source });
+  }
+
+  if (includeDefaultStyles) {
+    const markdownConfig = vscode.workspace.getConfiguration('markdown', uri || null);
+    const styles = markdownConfig ? markdownConfig['styles'] : '';
+    if (styles && Array.isArray(styles) && styles.length > 0) {
+      for (let i = 0; i < styles.length; i++) {
+        const expandedMarkdownStyle = resolveSettingPath(styles[i], uri);
+        if (!expandedMarkdownStyle) {
+          continue;
+        }
+        const href = fixHref(uri, expandedMarkdownStyle);
+        const injection = buildStyleInjection(href);
+        buffer += injection.snippet;
+        appliedStyles.push({
+          type: 'markdown.styles',
+          original: styles[i],
+          expanded: expandedMarkdownStyle,
+          resolved: href,
+          mode: injection.mode,
+          filePath: injection.filePath || null
+        });
+      }
+    }
+  }
+
+  const highlightStyle = highlightStyleSettingInfo.value || '';
+  const isHighlightEnabled = highlightSettingInfo.value;
+  if (isHighlightEnabled) {
+    if (highlightStyle) {
+      filename = path.join(__dirname, 'node_modules', 'highlight.js', 'styles', highlightStyle);
+      buffer += makeCss(filename);
+      appliedStyles.push({ type: 'highlight.js', path: filename, source: highlightStyleSettingInfo.source });
+    } else {
+      filename = path.join(__dirname, 'styles', 'tomorrow.css');
+      buffer += makeCss(filename);
+      appliedStyles.push({ type: 'highlight.js', path: filename, source: 'default' });
+    }
+  }
+
+  if (includeDefaultStyles) {
+    filename = path.join(__dirname, 'styles', 'markprint.css');
+    buffer += makeCss(filename);
+    appliedStyles.push({ type: 'markprint.default', path: filename, source: includeDefaultInfo.source });
+  }
+
+  return buffer;
 }
 
 function buildStyleInjection(href) {
@@ -1097,7 +1261,7 @@ function checkPuppeteerBinary() {
  */
 function installChromium() {
   try {
-    vscode.window.showInformationMessage('[] Installing Chromium ...');
+    vscode.window.showInformationMessage(`[${EXTENSION_DISPLAY_NAME}] Installing Chromium ...`);
     var statusbarmessage = vscode.window.setStatusBarMessage('$(markdown) Installing Chromium ...');
 
     // proxy setting
@@ -1125,7 +1289,7 @@ function installChromium() {
         INSTALL_CHECK = true;
         statusbarmessage.dispose();
         vscode.window.setStatusBarMessage('$(markdown) Chromium installation succeeded!', StatusbarMessageTimeout);
-        vscode.window.showInformationMessage('[] Chromium installation succeeded.');
+        vscode.window.showInformationMessage(`[${EXTENSION_DISPLAY_NAME}] Chromium installation succeeded.`);
         return Promise.all(cleanupOldVersions);
       }
     }
@@ -1191,5 +1355,73 @@ function init() {
     }
   } catch (error) {
     showErrorMessage('init()', error);
+  }
+}
+
+function describeFallbackReason(reason, extra = {}, fallbackTemplate) {
+  if (reason === 'unresolvedFrontMatter') {
+    if (extra.requested) {
+      const fieldLabel = extra.field ? `${extra.field} ` : '';
+      return `Requested ${fieldLabel}"${extra.requested}" could not be resolved. Select a profile to continue.`;
+    }
+    return 'Front matter is missing a pipeline_profile. Select the profile to use.';
+  }
+  if (reason === 'invalidWorkspaceState' && extra.lastTemplateId) {
+    return `Last used profile "${extra.lastTemplateId}" is unavailable. Pick another profile to continue.`;
+  }
+  if (reason === 'missingTemplate' && fallbackTemplate) {
+    return `No profile specified. ${fallbackTemplate.label} is the default, but you can pick another.`;
+  }
+  return 'Select a pipeline profile to continue.';
+}
+
+async function handleTemplateFallback({ document, reason, extra, fallbackTemplate, workspaceState }) {
+  const message = describeFallbackReason(reason, extra, fallbackTemplate);
+  if (statusBarManager) {
+    statusBarManager.showTemplateWarning(message);
+  }
+  try {
+    if (!templateRegistry) {
+      return fallbackTemplate;
+    }
+    const templates = templateRegistry.getAllTemplates();
+    if (templates.length === 0) {
+      vscode.window.showWarningMessage('No pipeline profiles are available. Please create or load one before exporting.');
+      return null;
+    }
+    const sorted = templates
+      .slice()
+      .sort((a, b) => a.label.localeCompare(b.label));
+    if (fallbackTemplate && !sorted.find(t => t.id === fallbackTemplate.id)) {
+      sorted.unshift(fallbackTemplate);
+    }
+    const items = sorted.map(t => ({
+      label: t.label,
+      description: `v${t.version} • ${t._source || 'bundled'}`,
+      detail: t.description || t.id,
+      picked: fallbackTemplate ? t.id === fallbackTemplate.id : false,
+      template: t
+    }));
+
+    const selected = await vscode.window.showQuickPick(items, {
+      placeHolder: message || 'Select a pipeline profile',
+      title: `${EXTENSION_DISPLAY_NAME}: Select pipeline profile`,
+      ignoreFocusOut: true
+    });
+
+    if (!selected) {
+      return null;
+    }
+
+    const state = workspaceState || (extensionContext && extensionContext.workspaceState);
+    if (state) {
+      await state.update(`markprint.lastTemplate.${document.uri.fsPath}`, selected.template.id);
+    }
+
+    return selected.template;
+  } finally {
+    if (statusBarManager) {
+      statusBarManager.clearTemplateWarning();
+    }
   }
 }

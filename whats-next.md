@@ -832,3 +832,18 @@ None currently in place. All changes are permanent architecture updates.
 3. Once tests pass, consider bumping `package.json` to `2.0.0` and drafting a CHANGELOG entry for the Phase 1 completion.
 4. Begin the renderer abstraction work from `multi-engine-phase2.md` (split Chromium driver, honor `profile.outputs`) after Phase 1 verification is signed off.
 </handoff>
+
+<handoff>
+## Dec 05 2025 — CSS priority + schema resolution tweaks
+- Implemented stylesheet precedence: front matter `style`/`styles` → template `resources.css` (with `${manifestDir}` tokens) → workspace settings → bundled defaults. Renderer now passes template/front matter into `makeHtml` so manifests can ship their own CSS (e.g., `aurora-galaxy.css`).
+- Template registry tracks `_manifestDir`/`_sourcePath` so relative resources resolve consistently; front matter is parsed only once per export.
+- Schema validation now searches `${extensionPath}` after workspace paths, so bundled manifests keep working even when `.markprint/schemas` isn’t mirrored into test workspaces.
+- Added `layout_profile` alias to `standard-letter.schema.json`; trimmed `prepare-test-workspace` so schemas aren’t recopied.
+- Tests still blocked (`.vscode-test/vscode-1.106.3/Code.exe` missing). Re-run `npm run test:download-vscode && npm test` once the binary is restored.
+
+### Immediate next actions
+1. Restore the VS Code test harness and run `npm test` to cover the new `readStyles` behavior (integration suite exercises document/workspace/extension fallbacks).
+2. Manually export `test/.test-workspace/SOP-200_Create_Workackage_Sequencing_Type.md` with front matter `style: aurora-galaxy.css` to confirm edge-to-edge background + template CSS priority.
+3. Decide whether schemas should still be mirrored into test workspaces or rely solely on `${extensionPath}` resolution; update docs accordingly.
+4. Once validation passes, add a CHANGELOG entry summarizing the stylesheet priority and schema resolution fix.
+</handoff>

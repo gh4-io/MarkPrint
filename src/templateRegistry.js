@@ -5,7 +5,6 @@ const path = require('path');
 const vscode = require('vscode');
 const debugLogger = require('./debugLogger');
 const { resolveSettingPath } = require('./pathResolver');
-const { confirmContinueCancel } = require('./prompt');
 const LayoutLoader = require('./layoutLoader');
 
 const BUILT_IN_DEFAULT_TEMPLATE_ID = 'standard-letter';
@@ -21,6 +20,7 @@ class TemplateRegistry {
     this.bundledTemplatesPath = path.join(context.extensionPath, 'templates');
     this.workspaceTemplatesPath = '.markprint/templates';
     this.layoutLoader = new LayoutLoader({ extensionPath: context.extensionPath });
+    this.fallbackSelector = null;
   }
 
   /**
@@ -138,6 +138,10 @@ class TemplateRegistry {
       manifestDir: options.manifestDir || path.dirname(filePath),
       workspaceFolder: options.workspaceFolder
     });
+    template._manifestDir = options.manifestDir || path.dirname(filePath);
+    if (!template._sourcePath) {
+      template._sourcePath = filePath;
+    }
 
     return template;
   }
@@ -358,10 +362,18 @@ class TemplateRegistry {
           });
           return template;
         }
-        const fallback = await this.applyTemplateFallback(document, 'unresolvedFrontMatter', {
-          requested: requestedProfile,
-          field: 'pipeline_profile'
-        });
+        const fallback = await this.applyTemplateFallback(
+          document,
+          'unresolvedFrontMatter',
+          {
+            requested: requestedProfile,
+            field: 'pipeline_profile'
+          },
+          workspaceState
+        );
+        if (fallback === null) {
+          return null;
+        }
         if (fallback) {
           return fallback;
         }
@@ -377,10 +389,18 @@ class TemplateRegistry {
           });
           return template;
         }
-        const fallback = await this.applyTemplateFallback(document, 'unresolvedFrontMatter', {
-          requested: frontMatterValue,
-          field: 'layout_template'
-        });
+        const fallback = await this.applyTemplateFallback(
+          document,
+          'unresolvedFrontMatter',
+          {
+            requested: frontMatterValue,
+            field: 'layout_template'
+          },
+          workspaceState
+        );
+        if (fallback === null) {
+          return null;
+        }
         if (fallback) {
           return fallback;
         }
@@ -396,15 +416,31 @@ class TemplateRegistry {
         return template;
       }
       await workspaceState.update(`markprint.lastTemplate.${document.uri.fsPath}`, undefined);
-      const fallback = await this.applyTemplateFallback(document, 'invalidWorkspaceState', {
-        lastTemplateId
-      });
+      const fallback = await this.applyTemplateFallback(
+        document,
+        'invalidWorkspaceState',
+        {
+          lastTemplateId
+        },
+        workspaceState
+      );
+      if (fallback === null) {
+        return null;
+      }
       if (fallback) {
         return fallback;
       }
     }
 
-    const fallbackTemplate = await this.applyTemplateFallback(document, 'missingTemplate');
+    const fallbackTemplate = await this.applyTemplateFallback(
+      document,
+      'missingTemplate',
+      {},
+      workspaceState
+    );
+    if (fallbackTemplate === null) {
+      return null;
+    }
     if (fallbackTemplate) {
       return fallbackTemplate;
     }
@@ -624,7 +660,11 @@ class TemplateRegistry {
     return folder ? folder.uri.fsPath : undefined;
   }
 
-  async applyTemplateFallback(document, reason, extra = {}) {
+  setFallbackSelector(selector) {
+    this.fallbackSelector = selector;
+  }
+
+  async applyTemplateFallback(document, reason, extra = {}, workspaceState) {
     const fallbackTemplate = await this.getDefaultTemplate(document);
     if (!fallbackTemplate) {
       debugLogger.log('template', 'Fallback requested but no default template available', {
@@ -632,7 +672,7 @@ class TemplateRegistry {
         reason,
         extra
       });
-      return null;
+      return undefined;
     }
 
     const config = vscode.workspace.getConfiguration('markprint');
@@ -644,26 +684,18 @@ class TemplateRegistry {
         reason,
         extra
       });
-      return null;
+      return undefined;
     }
 
-    if (fallbackMode === 'prompt') {
-      let detail = `No template specified. Continue with ${fallbackTemplate.label}?`;
-      if (extra.requested) {
-        const fieldLabel = extra.field ? `${extra.field} ` : '';
-        detail = `Requested ${fieldLabel}"${extra.requested}" could not be resolved. Continue with ${fallbackTemplate.label}?`;
-      } else if (extra.lastTemplateId) {
-        detail = `Last used template "${extra.lastTemplateId}" is unavailable. Continue with ${fallbackTemplate.label}?`;
-      }
-      const confirmed = await confirmContinueCancel(
-        'Template fallback',
-        detail,
-        {
-          proceedLabel: `Continue with ${fallbackTemplate.label}`,
-          cancelLabel: 'Cancel export'
-        }
-      );
-      if (!confirmed) {
+    if (fallbackMode === 'prompt' && typeof this.fallbackSelector === 'function') {
+      const selection = await this.fallbackSelector({
+        document,
+        reason,
+        extra,
+        fallbackTemplate,
+        workspaceState
+      });
+      if (!selection) {
         debugLogger.log('template', 'User cancelled template fallback', {
           document: document.uri.fsPath,
           reason,
@@ -671,6 +703,12 @@ class TemplateRegistry {
         });
         return null;
       }
+      this.logTemplateSelection(document, selection, 'defaultFallback', {
+        reason,
+        fallbackMode,
+        ...extra
+      });
+      return selection;
     }
 
     this.logTemplateSelection(document, fallbackTemplate, 'defaultFallback', {
