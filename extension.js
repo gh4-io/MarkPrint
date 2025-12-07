@@ -8,12 +8,17 @@ var INSTALL_CHECK = false;
 const debugLogger = require('./src/debugLogger');
 const { resolveSettingPath } = require('./src/pathResolver');
 const { resolveStylesheetHref } = require('./src/stylesheetResolver');
+const cacheManager = require('./src/cacheManager');
 
 // MarkPrint Phase 1: Template Foundations
 const TemplateRegistry = require('./src/templateRegistry');
 const StatusBarManager = require('./src/statusBar');
 const SchemaValidator = require('./src/schemaValidator');
 const packageJson = require('./package.json');
+
+// MarkPrint Phase 2: Renderer Abstraction
+const { RendererRegistry } = require('./src/renderers/index');
+const ChromiumRenderer = require('./src/renderers/chromiumRenderer');
 
 const EXTENSION_DISPLAY_NAME =
   (packageJson && (packageJson.displayName || packageJson.name)) ||
@@ -23,6 +28,7 @@ const EXTENSION_DISPLAY_NAME =
 let templateRegistry;
 let statusBarManager;
 let schemaValidator;
+let rendererRegistry;
 let extensionContext;
 const deprecatedSettingWarnings = new Set();
 
@@ -44,7 +50,7 @@ function warnIfDeprecatedSettingUsed(settingKey, guidance) {
       deprecatedSettingWarnings.add(settingKey);
     }
   } catch (error) {
-    console.warn('Failed to check deprecated setting', settingKey, error.message);
+    debugLogger.log('warn', 'Failed to check deprecated setting', { settingKey, error: error.message });
   }
 }
 
@@ -59,9 +65,20 @@ function activate(context) {
   statusBarManager = new StatusBarManager();
   schemaValidator = new SchemaValidator();
 
+  // Initialize Phase 2: Renderer abstraction
+  rendererRegistry = new RendererRegistry();
+  rendererRegistry.register('chromium', new ChromiumRenderer({
+    extensionPath: context.extensionPath
+  }));
+
+  debugLogger.log('renderer', 'Renderer registry initialized', {
+    available: rendererRegistry.getNames(),
+    default: rendererRegistry.defaultRenderer
+  });
+
   // Initialize template registry
   templateRegistry.initialize().catch(err => {
-    console.error('Failed to initialize template registry:', err);
+    debugLogger.log('error', 'Failed to initialize template registry', { error: err.message, stack: err.stack });
   });
 
   // Initialize status bar
@@ -87,6 +104,13 @@ function activate(context) {
     vscode.commands.registerCommand('markprint.reloadTemplates', async function () {
       await templateRegistry.reload();
       vscode.window.showInformationMessage('Templates reloaded');
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('markprint.clearCache', function () {
+      cacheManager.clearAll();
+      vscode.window.showInformationMessage('MarkPrint cache cleared');
     })
   );
 
@@ -168,7 +192,7 @@ async function validateAndPreview(document, context) {
     }
 
     // Validate metadata
-    const isValid = await schemaValidator.validateDocument(document, template);
+        const isValid = await schemaValidator.validateDocument(document, template);
     if (!isValid) {
       // Validation errors reported to Problems panel, don't proceed
       return;
@@ -180,7 +204,7 @@ async function validateAndPreview(document, context) {
     // Show lightweight HTML preview (future: could generate HTML preview)
     vscode.window.setStatusBarMessage('$(check) Template validation passed', 3000);
   } catch (error) {
-    console.error('Validation and preview failed:', error);
+    debugLogger.log('error', 'Validation and preview failed', { error: error.message });
   }
 }
 
@@ -214,10 +238,41 @@ async function markprint(option_type, context) {
       return;
     }
 
-    let activeTemplate = null;
+    // Determine export type for progress title
+    var types_format = ['html', 'pdf', 'png', 'jpeg'];
+    var types = [];
+    if (types_format.indexOf(option_type) >= 0) {
+      types[0] = option_type;
+    } else if (option_type === 'settings') {
+      var types_tmp = vscode.workspace.getConfiguration('markprint')['type'] || 'pdf';
+      if (types_tmp && !Array.isArray(types_tmp)) {
+          types[0] = types_tmp;
+      } else {
+        types = vscode.workspace.getConfiguration('markprint')['type'] || 'pdf';
+      }
+    } else if (option_type === 'all') {
+      types = types_format;
+    } else {
+      showErrorMessage('markprint().1 Supported formats: html, pdf, png, jpeg.');
+      return;
+    }
+
+    const exportTypeLabel = types.length === 1 ? types[0].toUpperCase() : `${types.length} formats`;
+
+    // Wrap export in progress notification
+    return vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      title: `Exporting to ${exportTypeLabel}...`,
+      cancellable: false
+    }, async (progress) => {
+      progress.report({ increment: 0, message: 'Validating document...' });
+
+
+      let activeTemplate = null;
 
     // Phase 1: Validate template if available
     if (context && templateRegistry && schemaValidator) {
+      progress.report({ increment: 10, message: 'Loading template...' });
       activeTemplate = await templateRegistry.getTemplateForDocument(editor.document, context.workspaceState);
       const template = activeTemplate;
       if (template) {
@@ -248,7 +303,7 @@ async function markprint(option_type, context) {
           });
         }
 
-        const isValid = await schemaValidator.validateDocument(editor.document, template);
+        progress.report({ increment: 30, message: 'Validating schema...' });
         if (!isValid) {
           vscode.window.showErrorMessage('Export blocked: template validation failed. Check Problems panel.');
           return;
@@ -279,53 +334,186 @@ async function markprint(option_type, context) {
     // convert and export markdown to pdf, html, png, jpeg
     if (types && Array.isArray(types) && types.length > 0) {
       const documentText = editor.document.getText();
+
+      // Build render context for renderer selection
+      const renderContext = {
+        format: types[0], // Will be updated per type in loop
+        template: activeTemplate,
+        layout: activeTemplate ? activeTemplate.layoutDescriptor : null,
+        document: mdfilename
+      };
+
+      // Select renderer based on context
+      progress.report({ increment: 40, message: 'Preparing renderer...' });
+      const renderer = rendererRegistry.select(renderContext);
+      if (!renderer) {
+        throw new Error('No suitable renderer available for requested format');
+      }
+
+      debugLogger.log('renderer', 'Selected renderer', {
+        name: renderer.name,
+        version: renderer.version,
+        formats: types,
+        template: activeTemplate ? activeTemplate.id : 'none',
+        layoutHint: renderContext.layout ? renderContext.layout.rendererHint : 'none'
+      });
+
       for (var i = 0; i < types.length; i++) {
+        const baseProgress = 60;
+        const progressPerFile = 40 / types.length;
         var type = types[i];
         if (types_format.indexOf(type) >= 0) {
           filename = mdfilename.replace(ext, '.' + type);
-          await renderWithChromium({
+          renderContext.format = type; // Update format for this iteration
+
+          progress.report({ 
+            increment: baseProgress + (i * progressPerFile),
+            message: `Creating ${type.toUpperCase()}... (${i + 1}/${types.length})`
+          });
+
+          await renderWithEngine({
+            renderer,
             type,
             uri,
             text: documentText,
             filename,
             sourcePath: mdfilename,
-            template: activeTemplate
+            template: activeTemplate,
+            context: renderContext
           });
         } else {
           showErrorMessage('markprint().2 Supported formats: html, pdf, png, jpeg.');
           return;
         }
       }
+      progress.report({ increment: 100, message: 'Complete!' });
     } else {
       showErrorMessage('markprint().3 Supported formats: html, pdf, png, jpeg.');
       return;
     }
+    }); // End withProgress
   } catch (error) {
     if (!error || !error.__markprintLogged) {
       showErrorMessage('markprint()', error);
     } else {
-      console.error('markprint()', error && error.message ? error.message : error);
+      debugLogger.log('error', 'markprint() error', { error: error && error.message ? error.message : error });
     }
   }
 }
 
-// Chromium renderer pipeline
-async function renderWithChromium({ type, uri, text, filename, sourcePath, template }) {
-  debugLogger.log('renderer', 'Chromium render start', {
+/**
+ * Render pipeline using selected renderer (Phase 2)
+ * @param {Object} params - Render parameters
+ * @param {IRendererDriver} params.renderer - Selected renderer instance
+ * @param {string} params.type - Output format (pdf, html, png, jpeg)
+ * @param {Object} params.uri - VS Code URI
+ * @param {string} params.text - Markdown source text
+ * @param {string} params.filename - Output filename
+ * @param {string} params.sourcePath - Source file path
+ * @param {Object} params.template - Active template metadata
+ * @param {Object} params.context - Rendering context
+ */
+async function renderWithEngine({ renderer, type, uri, text, filename, sourcePath, template, context }) {
+  debugLogger.log('renderer', 'Render pipeline start', {
+    renderer: renderer.name,
     type,
     document: sourcePath
   });
+
+  // Parse front matter
   const grayMatter = require('gray-matter');
   const matterParts = grayMatter(text);
+
+  // Markdown → HTML
   const content = convertMarkdownToHtml(sourcePath, type, text, { matterParts });
+
+  // HTML + template → final HTML
   const html = makeHtml(content, uri, {
     template,
     frontMatter: matterParts ? matterParts.data : null
   });
+
   if (typeof html !== 'string' || html.length === 0) {
-    throw new Error('Chromium renderer produced empty HTML content.');
+    throw new Error('Renderer produced empty HTML content.');
   }
-  await exportPdf(html, filename, type, uri);
+
+  // Resolve output directory (profile → setting → source directory)
+  const outputDir = resolveOutputDirectory(sourcePath, template);
+  const outputPath = path.join(outputDir, path.basename(filename));
+
+  // Build render options
+  const renderOptions = {
+    path: outputPath,
+    format: type,
+    uri,
+    template,
+    frontMatter: matterParts.data,
+    context
+  };
+
+  // Dispatch to renderer based on type
+  switch (type) {
+    case 'pdf':
+      await renderer.renderToPdf(html, renderOptions);
+      break;
+    case 'html':
+      await renderer.renderToHtml(html, renderOptions);
+      break;
+    case 'png':
+      await renderer.renderToPng(html, renderOptions);
+      break;
+    case 'jpeg':
+      await renderer.renderToJpeg(html, renderOptions);
+      break;
+    default:
+      throw new Error('Unsupported format: ' + type);
+  }
+
+  debugLogger.log('renderer', 'Render pipeline complete', {
+    renderer: renderer.name,
+    output: outputPath
+  });
+
+  // Show completion message (replicate existing behavior)
+  const StatusbarMessageTimeout = vscode.workspace.getConfiguration('markprint')['StatusbarMessageTimeout'];
+  vscode.window.setStatusBarMessage('$(markdown) ' + outputPath, StatusbarMessageTimeout);
+}
+
+/**
+ * Resolve output directory with precedence: profile → setting → default
+ * @param {string} sourcePath - Source markdown file path
+ * @param {Object} template - Active template with profile
+ * @returns {string} Resolved output directory path
+ */
+function resolveOutputDirectory(sourcePath, template) {
+  // Priority 1: Profile output directory
+  if (template && template.profile && template.profile.outputs) {
+    const outputConfig = template.profile.outputs.pdf || template.profile.outputs.html;
+    if (outputConfig && outputConfig.target_directory) {
+      debugLogger.log('renderer', 'Using profile output directory', {
+        directory: outputConfig.target_directory,
+        precedence: 'profile'
+      });
+      return resolveSettingPath(outputConfig.target_directory, vscode.Uri.file(sourcePath));
+    }
+  }
+
+  // Priority 2: markprint.outputDirectory setting
+  const settingDir = vscode.workspace.getConfiguration('markprint')['outputDirectory'];
+  if (settingDir) {
+    debugLogger.log('renderer', 'Using setting output directory', {
+      directory: settingDir,
+      precedence: 'setting'
+    });
+    return getOutputDir(sourcePath, vscode.Uri.file(sourcePath));
+  }
+
+  // Priority 3: Same directory as source file
+  debugLogger.log('renderer', 'Using source directory', {
+    directory: path.dirname(sourcePath),
+    precedence: 'default'
+  });
+  return path.dirname(sourcePath);
 }
 
 async function markdownPdfOnSave(doc, context) {
@@ -731,7 +919,7 @@ function exportPdf(data, filename, type, uri) {
         if (!error || !error.__markprintLogged) {
           showErrorMessage('exportPdf()', error);
         } else {
-          console.error('exportPdf()', error && error.message ? error.message : error);
+          debugLogger.log('error', 'exportPdf() error', { error: error && error.message ? error.message : error });
         }
       } finally {
         if (!debug && tmpfilename && isExistsPath(tmpfilename)) {
@@ -771,7 +959,7 @@ function isExistsPath(path) {
     fs.accessSync(path);
     return true;
   } catch (error) {
-    console.warn(error.message);
+    debugLogger.log('warn', 'Path access failed', { path, error: error.message });
     return false;
   }
 }
@@ -784,11 +972,11 @@ function isExistsDir(dirname) {
     if (fs.statSync(dirname).isDirectory()) {
       return true;
     } else {
-      console.warn('Directory does not exist!') ;
+      debugLogger.log('warn', 'Directory does not exist', { dirname });
       return false;
     }
   } catch (error) {
-    console.warn(error.message);
+    debugLogger.log('warn', 'Directory stat failed', { dirname, error: error.message });
     return false;
   }
 }
@@ -906,8 +1094,17 @@ function convertImgPath(src, filename) {
 
 function makeCss(filename) {
   try {
+    // Check cache first
+    const cachedCss = cacheManager.getCSS(filename);
+    if (cachedCss) {
+      debugLogger.log('stylesheet', 'Using cached CSS', { path: filename });
+      return '\n<style>\n' + cachedCss + '\n</style>\n';
+    }
+
     var css = readFile(filename);
     if (css) {
+      // Cache the CSS content
+      cacheManager.setCSS(filename, css);
       return '\n<style>\n' + css + '\n</style>\n';
     } else {
       return '';
@@ -1184,7 +1381,7 @@ function tryInlineLocalStylesheet(href) {
       return { css, filePath };
     }
   } catch (error) {
-    console.warn('Failed to inline stylesheet:', error.message);
+    debugLogger.log('warn', 'Failed to inline stylesheet', { error: error.message });
   }
   return null;
 }
@@ -1280,7 +1477,7 @@ function installChromium() {
       .catch(onError);
 
     function onSuccess(localRevisions) {
-      console.log('Chromium downloaded to ' + revisionInfo.folderPath);
+      debugLogger.log('chromium', 'Chromium downloaded', { path: revisionInfo.folderPath });
       localRevisions = localRevisions.filter(revision => revision !== revisionInfo.revision);
       // Remove previous chromium revisions.
       const cleanupOldVersions = localRevisions.map(revision => browserFetcher.remove(revision));
@@ -1320,10 +1517,10 @@ function showErrorMessage(msg, error) {
 
   vscode.window.showErrorMessage(formatted);
   if (error && error.stack) {
-    console.error(formatted);
-    console.error(error.stack);
+    debugLogger.log('error', formatted);
+    debugLogger.log('error', 'Stack trace', { stack: error.stack });
   } else {
-    console.error(formatted);
+    debugLogger.log('error', formatted);
   }
   if (error && typeof error === 'object') {
     error.__markprintLogged = true;

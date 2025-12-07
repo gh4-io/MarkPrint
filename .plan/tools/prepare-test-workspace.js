@@ -92,8 +92,8 @@ function main() {
   console.log('[prepare-test-workspace] Removing workspace template overrides');
   removePath(path.join(testWorkspace, '.markprint', 'templates'));
   copyFile(sopSrc, sopDest);
-  console.log('[prepare-test-workspace] Mirroring styles directory');
-  copyDirectory(stylesSrc, stylesDest);
+  //console.log('[prepare-test-workspace] Mirroring styles directory');
+  //copyDirectory(stylesSrc, stylesDest);
   console.log('[prepare-test-workspace] Mirroring .vscode directory');
   copyDirectory(vscodeConfigSrc, vscodeConfigDest);
 

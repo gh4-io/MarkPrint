@@ -6,6 +6,7 @@ const vscode = require('vscode');
 const debugLogger = require('./debugLogger');
 const { resolveSettingPath } = require('./pathResolver');
 const LayoutLoader = require('./layoutLoader');
+const cacheManager = require('./cacheManager');
 
 const BUILT_IN_DEFAULT_TEMPLATE_ID = 'standard-letter';
 
@@ -58,7 +59,7 @@ class TemplateRegistry {
             });
           }
         } catch (error) {
-          console.error(`Failed to load bundled template ${file}:`, error);
+          debugLogger.log('error', 'Failed to load bundled template', { file, error: error.message });
         }
       }
     }
@@ -100,7 +101,7 @@ class TemplateRegistry {
               });
             }
           } catch (error) {
-            console.error(`Failed to load workspace template ${file}:`, error);
+            debugLogger.log('error', 'Failed to load workspace template', { file, error: error.message });
           }
         }
       }
@@ -111,6 +112,13 @@ class TemplateRegistry {
    * Load and parse a single template file
    */
   async loadTemplate(filePath, options = {}) {
+    // Check cache first
+    const cached = cacheManager.getTemplate(filePath);
+    if (cached) {
+      debugLogger.log('template', 'Using cached template', { path: filePath });
+      return cached;
+    }
+
     const content = fs.readFileSync(filePath, 'utf-8');
     const ext = path.extname(filePath).toLowerCase();
 
@@ -142,6 +150,9 @@ class TemplateRegistry {
     if (!template._sourcePath) {
       template._sourcePath = filePath;
     }
+
+    // Cache the loaded template
+    cacheManager.setTemplate(filePath, template);
 
     return template;
   }
@@ -283,7 +294,7 @@ class TemplateRegistry {
       try {
         resolveTemplate(template);
       } catch (error) {
-        console.error(`Failed to resolve template inheritance for ${template.id}:`, error);
+        debugLogger.log('error', 'Failed to resolve template inheritance', { templateId: template.id, error: error.message });
       }
     }
   }
@@ -459,7 +470,7 @@ class TemplateRegistry {
       const matter = grayMatter(text);
       return matter.data;
     } catch (error) {
-      console.error('Failed to parse front matter:', error);
+      debugLogger.log('error', 'Failed to parse front matter', { error: error.message });
       return null;
     }
   }
@@ -547,6 +558,7 @@ class TemplateRegistry {
    */
   async reload() {
     this.templates.clear();
+    cacheManager.clearTemplates(); // Clear template cache on reload
     await this.initialize();
   }
 

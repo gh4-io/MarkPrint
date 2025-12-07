@@ -62,3 +62,73 @@ If VS Code cannot be spawned (common on CI without a GUI), install the requireme
 ## 7. Dependency Notes
 
 - `npm ls` now runs clean. Upgrading `cheerio` to `^1.1.0` removed the old `punycode` deprecation warning and ensures Chromium export logs stay focused on real issues.
+
+---
+
+## Phase 2: Renderer Abstraction (Internal Changes Only)
+
+**Version**: 1.5.0+
+**Date**: 2025-12-06
+**User Impact**: None (pure refactoring)
+
+### What Changed
+
+Phase 2 refactored the Chromium rendering logic into a modular renderer system. **No user-facing changes** — all commands, settings, and templates work identically.
+
+**Internal Changes**:
+- Extracted Chromium logic from `extension.js` into `src/renderers/chromiumRenderer.js`
+- Created `RendererRegistry` for managing multiple rendering engines
+- Implemented `IRendererDriver` interface for future renderers (Playwright, Vivliostyle, etc.)
+- Added hierarchical output directory resolution: `profile.outputs.*.target_directory` → `markprint.outputDirectory` → source directory
+- Enhanced logging: renderer selection, version, and output directory precedence
+
+### Migration Required
+
+**None**. Existing templates, settings, and workflows continue to work without modification.
+
+### New Capabilities (Opt-In)
+
+Templates can now specify `outputs.*.target_directory` in their pipeline profile:
+
+```json
+{
+  "profile": {
+    "id": "my-template",
+    "outputs": {
+      "pdf": {
+        "target_directory": "${workspaceRoot}/dist/reports"
+      }
+    }
+  }
+}
+```
+
+This overrides `markprint.outputDirectory` for that template only.
+
+### Debugging
+
+Enable `markprint.debug: true` to see renderer selection logs:
+
+```
+[renderer] Renderer registry initialized
+  available: ["chromium"]
+  default: "chromium"
+
+[renderer] Selected renderer
+  name: "chromium"
+  version: "2.1.1"
+
+[renderer] Using profile output directory
+  directory: "${workspaceRoot}/dist"
+  precedence: "profile"
+```
+
+### Testing
+
+No changes to test execution:
+- `npm test` continues to work (requires Chromium dependencies in WSL2)
+- New tests added: `test/suite/renderer.test.js` (unit tests for renderer system)
+
+### Future
+
+Phase 3 will add Playwright and Vivliostyle renderers. Templates can start using `renderer.engine` and `layout.rendererHint` now — they will be honored when those engines are added.

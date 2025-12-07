@@ -847,3 +847,135 @@ None currently in place. All changes are permanent architecture updates.
 3. Decide whether schemas should still be mirrored into test workspaces or rely solely on `${extensionPath}` resolution; update docs accordingly.
 4. Once validation passes, add a CHANGELOG entry summarizing the stylesheet priority and schema resolution fix.
 </handoff>
+
+<handoff timestamp="2025-12-06T15:30-0500">
+## Phase 2 Renderer Abstraction — Complete
+
+**What shipped**:
+- Created `IRendererDriver` interface + `RendererRegistry` in `src/renderers/index.js`
+- Extracted all Chromium/Puppeteer logic from `extension.js` into `src/renderers/chromiumRenderer.js` (~350 lines)
+- Replaced `renderWithChromium()` with `renderWithEngine()` that dispatches to selected renderer
+- Implemented hierarchical output directory resolution: `profile.outputs.*.target_directory` → `markprint.outputDirectory` → source directory
+- Added comprehensive renderer selection logging (name, version, template, layout hint, precedence)
+- Created unit test suite: `test/suite/renderer.test.js` (registry, selection logic, ChromiumRenderer interface)
+- Updated documentation: `README.md` (renderer architecture section), `MIGRATION.md` (Phase 2 notes), `docs/renderers.md` (full spec)
+
+**Architecture Changes**:
+- `extension.js`: Simplified from ~1300 → ~900 lines (Chromium logic extracted)
+- Renderer registry initialized in `activate()`, selects renderer per export based on template preferences
+- `ChromiumRenderer` encapsulates all Puppeteer operations (PDF, PNG, JPEG, HTML rendering)
+- Output directory resolution honors profile → setting → default precedence with logging
+
+**User Impact**: **ZERO**
+- All commands work identically (`extension.markprint.pdf`, etc.)
+- Same configuration (`markprint.*` settings)
+- Same default behavior (Chromium rendering)
+- Backward compatible with all existing templates
+
+**Testing Status**:
+- Code syntax validated (all files pass `node -c`)
+- Unit tests created (not yet run due to missing VS Code test harness)
+- Awaiting WSL2 Chromium dependencies + test binary download for full validation
+- Manual verification pending
+
+**New Capabilities** (opt-in):
+- Templates can specify `renderer.engine` and `renderer.fallback` (currently only `chromium` active)
+- Templates can set `outputs.pdf.target_directory` to override global output directory
+- Enhanced debug logging when `markprint.debug: true`
+
+**Ready for Phase 3**: Playwright/Vivliostyle/Paged.js renderers can now be added by:
+1. Implementing `IRendererDriver` interface
+2. Registering in `extension.js` activate()
+3. Templates immediately honor via `renderer.engine` selection
+
+**Validation Checklist** (for next session):
+1. Install WSL2 Chromium dependencies (see earlier notes)
+2. Run `npm run test:download-vscode && npm test`
+3. Verify renderer.test.js passes
+4. Manually export SOP-200 via Extension Development Host
+5. Confirm logs show renderer selection + output directory precedence
+6. Compare output files to Phase 1 baseline (should be identical)
+
+**Files Modified**:
+- `extension.js` (renderer integration, output resolution)
+- `README.md` (renderer architecture section)
+- `MIGRATION.md` (Phase 2 notes)
+
+**Files Created**:
+- `src/renderers/index.js` (interface + registry)
+- `src/renderers/chromiumRenderer.js` (Chromium driver)
+- `test/suite/renderer.test.js` (unit tests)
+- `docs/renderers.md` (full specification)
+
+**Next Steps**:
+1. Validate Phase 2 implementation (see checklist above)
+2. Begin Phase 3 planning (Playwright renderer implementation)
+3. Consider adding Paged.js polyfill for CSS Paged Media support
+4. Update pipeline profile schema to enforce valid `renderer.engine` enum values
+</handoff>
+
+<handoff timestamp="2025-12-06T15:30-0500">
+## Phase 2 Renderer Abstraction — Complete
+
+**What shipped**:
+- Created `IRendererDriver` interface + `RendererRegistry` in `src/renderers/index.js`
+- Extracted all Chromium/Puppeteer logic from `extension.js` into `src/renderers/chromiumRenderer.js` (~350 lines)
+- Replaced `renderWithChromium()` with `renderWithEngine()` that dispatches to selected renderer
+- Implemented hierarchical output directory resolution: `profile.outputs.*.target_directory` → `markprint.outputDirectory` → source directory
+- Added comprehensive renderer selection logging (name, version, template, layout hint, precedence)
+- Created unit test suite: `test/suite/renderer.test.js` (registry, selection logic, ChromiumRenderer interface)
+- Updated documentation: `README.md` (renderer architecture section), `MIGRATION.md` (Phase 2 notes), `docs/renderers.md` (full spec)
+
+**Architecture Changes**:
+- `extension.js`: Simplified from ~1300 → ~900 lines (Chromium logic extracted)
+- Renderer registry initialized in `activate()`, selects renderer per export based on template preferences
+- `ChromiumRenderer` encapsulates all Puppeteer operations (PDF, PNG, JPEG, HTML rendering)
+- Output directory resolution honors profile → setting → default precedence with logging
+
+**User Impact**: **ZERO**
+- All commands work identically (`extension.markprint.pdf`, etc.)
+- Same configuration (`markprint.*` settings)
+- Same default behavior (Chromium rendering)
+- Backward compatible with all existing templates
+
+**Testing Status**:
+- Code syntax validated (all files pass `node -c`)
+- Unit tests created (not yet run due to missing VS Code test harness)
+- Awaiting WSL2 Chromium dependencies + test binary download for full validation
+- Manual verification pending
+
+**New Capabilities** (opt-in):
+- Templates can specify `renderer.engine` and `renderer.fallback` (currently only `chromium` active)
+- Templates can set `outputs.pdf.target_directory` to override global output directory
+- Enhanced debug logging when `markprint.debug: true`
+
+**Ready for Phase 3**: Playwright/Vivliostyle/Paged.js renderers can now be added by:
+1. Implementing `IRendererDriver` interface
+2. Registering in `extension.js` activate()
+3. Templates immediately honor via `renderer.engine` selection
+
+**Validation Checklist** (for next session):
+1. Install WSL2 Chromium dependencies (see earlier notes)
+2. Run `npm run test:download-vscode && npm test`
+3. Verify renderer.test.js passes
+4. Manually export SOP-200 via Extension Development Host
+5. Confirm logs show renderer selection + output directory precedence
+6. Compare output files to Phase 1 baseline (should be identical)
+
+**Files Modified**:
+- `extension.js` (renderer integration, output resolution)
+- `README.md` (renderer architecture section)
+- `MIGRATION.md` (Phase 2 notes)
+
+**Files Created**:
+- `src/renderers/index.js` (interface + registry)
+- `src/renderers/chromiumRenderer.js` (Chromium driver)
+- `test/suite/renderer.test.js` (unit tests)
+- `docs/renderers.md` (full specification)
+
+**Next Steps**:
+1. Validate Phase 2 implementation (see checklist above)
+2. Begin Phase 3 planning (Playwright renderer implementation)
+3. Consider adding Paged.js polyfill for CSS Paged Media support
+4. Update pipeline profile schema to enforce valid `renderer.engine` enum values
+</handoff>

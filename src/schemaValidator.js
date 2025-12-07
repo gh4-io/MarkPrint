@@ -6,6 +6,7 @@ const vscode = require('vscode');
 const Ajv = require('ajv');
 const addFormats = require('ajv-formats');
 const debugLogger = require('./debugLogger');
+const cacheManager = require('./cacheManager');
 
 const ALWAYS_SCALAR_FIELDS = new Set([
   'category',
@@ -295,7 +296,7 @@ class SchemaValidator {
       }
 
       if (candidatePaths.length === 0) {
-        console.error('No candidates available for schema resolution', schemaPath);
+        debugLogger.log('error', 'No candidates available for schema resolution', { schemaPath });
         return null;
       }
 
@@ -307,7 +308,7 @@ class SchemaValidator {
         }
       }
 
-      console.log('Schema resolution:', {
+      debugLogger.log('schema', 'Schema resolution', {
         schemaPath,
         workspaceFolder,
         candidatesTried: candidatePaths,
@@ -316,14 +317,26 @@ class SchemaValidator {
       });
 
       if (!resolvedPath) {
-        console.error('Schema file not found in any candidate path for:', schemaPath);
+        debugLogger.log('error', 'Schema file not found in any candidate path', { schemaPath });
         return null;
       }
 
+      // Check cache first
+      const cached = cacheManager.getSchema(resolvedPath);
+      if (cached) {
+        debugLogger.log('schema', 'Using cached schema', { path: resolvedPath });
+        return { schema: cached, schemaPath: resolvedPath };
+      }
+
       const content = fs.readFileSync(resolvedPath, 'utf-8');
-      return { schema: JSON.parse(content), schemaPath: resolvedPath };
+      const schema = JSON.parse(content);
+
+      // Cache the schema
+      cacheManager.setSchema(resolvedPath, schema);
+
+      return { schema, schemaPath: resolvedPath };
     } catch (error) {
-      console.error('Failed to load schema:', error);
+      debugLogger.log('error', 'Failed to load schema', { error: error.message });
       return null;
     }
   }
@@ -338,7 +351,7 @@ class SchemaValidator {
       const matter = grayMatter(text);
       return matter.data;
     } catch (error) {
-      console.error('Failed to parse front matter:', error);
+      debugLogger.log('error', 'Failed to parse front matter', { error: error.message });
       return null;
     }
   }
@@ -400,7 +413,7 @@ class SchemaValidator {
       diagnostic.source = 'MarkPrint Template Validation';
       return diagnostic;
     } catch (err) {
-      console.error('Failed to create diagnostic:', err);
+      debugLogger.log('error', 'Failed to create diagnostic', { error: err.message });
       return null;
     }
   }

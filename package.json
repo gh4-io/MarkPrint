@@ -80,6 +80,11 @@
         "command": "markprint.reloadTemplates",
         "title": "MarkPrint: Reload Templates",
         "group": "markprint"
+      },
+      {
+        "command": "markprint.clearCache",
+        "title": "MarkPrint: Clear Cache",
+        "group": "markprint"
       }
     ],
     "menus": {

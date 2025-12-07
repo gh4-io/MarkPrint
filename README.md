@@ -211,6 +211,47 @@ Each layout descriptor can set `rendererHint`. Chromium remains the only active 
 - `markprint.defaultTemplate` now refers to the default pipeline profile ID.
 - If neither `pipeline_profile` nor `layout_template` is provided, MarkPrint prompts (per `markprint.templateFallbackMode`) before falling back to the configured default profile.
 
+## Renderer Architecture
+
+MarkPrint uses a modular renderer system (introduced in Phase 2) to support multiple rendering engines. Currently, **Chromium** (via Puppeteer) is the only active renderer, but the architecture enables future engines like Playwright, Vivliostyle, and Scribus.
+
+### How Renderer Selection Works
+
+Renderers are selected based on template preferences:
+
+1. **Template `renderer.engine`** - Explicit preference in pipeline profile manifest
+2. **Layout `rendererHint`** - Suggested by layout type (e.g., SLA → Scribus)
+3. **Default** - Falls back to Chromium
+
+Example template manifest:
+```json
+{
+  "renderer": {
+    "engine": "chromium",
+    "fallback": ["chromium"]
+  },
+  "layout": {
+    "rendererHint": "chromium"
+  }
+}
+```
+
+### Active Renderers
+
+- **Chromium** (default): Puppeteer-core v2.1.1, supports PDF/HTML/PNG/JPEG
+  - Full CSS rendering
+  - PDF options: margins, headers, footers, orientation
+  - Screenshot options: clip regions, quality, transparency
+
+### Future Renderers (Phase 3+)
+
+Planned additions:
+- **Playwright**: Multi-browser support (Chromium/Firefox/WebKit)
+- **Vivliostyle**: Professional print quality with CSS Paged Media
+- **Paged.js**: CSS Paged Media polyfill for existing renderers
+
+For detailed documentation, see [docs/renderers.md](docs/renderers.md).
+
 ## Extension Settings
 
 [Visual Studio Code User and Workspace Settings](https://code.visualstudio.com/docs/customization/userandworkspace)
